@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 设计 token（遵循 frontend-design 规范：语义化变量集中管理） */
+:root {
+  --color-bg: #f6f7fb;
+  --color-fg: #1f2430;
+  --color-muted: #6b7280;
+  --color-brand: #4f6ef7;
+  --color-border: #e5e7eb;
+  --radius: 12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-fg);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* 通用卡片与按钮（tier1 基础样式，tier2 可换 shadcn/ui） */
+@layer components {
+  .card {
+    @apply rounded-xl border border-surface-border bg-surface p-5 shadow-sm;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors;
+  }
+  .btn-primary {
+    @apply btn bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply btn border border-surface-border bg-surface text-gray-900 hover:bg-surface-muted;
+  }
+  .label {
+    @apply mb-1 block text-sm font-medium text-gray-700;
+  }
+  .input {
+    @apply w-full rounded-lg border border-surface-border px-3 py-2 text-sm outline-none focus:border-brand-500;
+  }
+}

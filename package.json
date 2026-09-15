@@ -1,0 +1,47 @@
+{
+  "name": "a10-knowledge-graph",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "A10 课程知识图谱智能构建与学习导航系统 (Next.js 全栈 / tier1 框架)",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@ai-sdk/openai-compatible": "^1.0.19",
+    "@ai-sdk/react": "^2.0.29",
+    "ai": "^5.0.29",
+    "echarts": "^5.6.0",
+    "echarts-for-react": "^3.0.2",
+    "neo4j-driver": "^5.28.1",
+    "next": "^15.5.25",
+    "pdf-parse": "^1.1.1",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.2.0",
+    "@playwright/test": "^1.50.1",
+    "@types/node": "^22.13.5",
+    "@types/pdf-parse": "^1.1.4",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.20.1",
+    "eslint-config-next": "^15.5.25",
+    "postcss": "^8.5.3",
+    "prettier": "^3.5.1",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  }
+}

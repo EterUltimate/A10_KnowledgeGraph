@@ -1,0 +1,28 @@
+
+> a10-knowledge-graph@0.1.0 dev
+> next dev
+
+   鈻?Next.js 15.5.25
+   - Local:        http://localhost:3000
+   - Network:      http://198.18.0.1:3000
+
+ 鉁?Starting...
+ 鉁?Ready in 3.2s
+ 鈼?Compiling /api/course/list ...
+ 鉁?Compiled /api/course/list in 1504ms (346 modules)
+ GET /api/course/list 200 in 1713ms
+ 鉁?Compiled /api/graph/[courseId] in 248ms (350 modules)
+[graph.getGraph] tier1 妗╋細杩斿洖绀轰緥鍥炬暟鎹?data-structures
+ GET /api/graph/data-structures 200 in 839ms
+ 鉁?Compiled /api/knowledge/[id] in 97ms (352 modules)
+ GET /api/knowledge/%E6%A0%88 200 in 612ms
+ 鉁?Compiled /api/path/[studentId] in 106ms (355 modules)
+ GET /api/path/demo-student?courseId=data-structures 200 in 617ms
+ 鈼?Compiling / ...
+ 鉁?Compiled / in 2.1s (684 modules)
+ GET / 200 in 2493ms
+ 鉁?Compiled /api/knowledge in 334ms (682 modules)
+ POST /api/knowledge 201 in 417ms
+ 鉁?Compiled /api/relation in 228ms (684 modules)
+ POST /api/relation 400 in 294ms
+[graph.getKnowledgeById] tier1 妗?鏍?[graph.addKnowledge] tier1 妗?鏍?
