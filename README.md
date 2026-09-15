@@ -4,6 +4,12 @@
 > 技术栈：Next.js 15 (App Router) + TypeScript + Vercel AI SDK + Neo4j · 全 TypeScript 全栈
 > 当前阶段：**tier1 框架骨架**（接口/服务桩代码，业务逻辑待 tier2 实现）
 
+[![CI](https://github.com/EterUltimate/A10_KnowledgeGraph/actions/workflows/ci.yml/badge.svg)](https://github.com/EterUltimate/A10_KnowledgeGraph/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
+[![AI SDK](https://img.shields.io/badge/Vercel%20AI%20SDK-v5-000)](https://sdk.vercel.ai/)
+
 ## 一、系统目标
 
 核心流程（对应 `A10.md` 一节）：
@@ -104,3 +110,21 @@ A10_KnowledgeGraph/
   桩函数以 `// TODO(tier2)` 标记，返回结构化占位数据。
 - **tier2（后续）**：填充文档解析、LLM 抽取、Neo4j 读写、图遍历、RAG 检索等真实业务逻辑；
   补齐 Playwright 用例与 S1-S5 文档正文。
+
+## 九、团队协作与开发进度
+
+本项目以 **Issue 登记任务 → 分支开发 → PR 合并** 的方式推进，开发进度通过 Issue 与 PR 状态体现（详见 [CONTRIBUTING.md](./CONTRIBUTING.md)）。
+
+- **任务看板**：[Issues](https://github.com/EterUltimate/A10_KnowledgeGraph/issues) — 每个 tier2 任务对应一个 Issue，含所属模块与建议负责角色。
+- **开发进度**：[Pull Requests](https://github.com/EterUltimate/A10_KnowledgeGraph/pulls) — 每个 PR 关联并关闭对应 Issue，合并即代表该进度单元完成。
+- **持续集成**：[Actions](https://github.com/EterUltimate/A10_KnowledgeGraph/actions/workflows/ci.yml) — 每次 push / PR 自动执行 lint + typecheck + build + Playwright E2E。
+- **分支保护**：`main` 需 CI 通过 + 至少 1 人 Review，采用 Squash Merge。
+
+### 进度总览
+
+| 阶段 | 状态 | 说明 |
+| --- | --- | --- |
+| tier1 框架骨架 | ✅ 已完成 | 目录/接口/服务/组件桩，可编译可跑通空流程 |
+| CI / 协作流程 | 🚧 进行中 | 见 PR（本分支） |
+| tier2 业务实现 | ⬜ 未开始 | 任务已拆解至 Issues，待认领 |
+| 演示与 S1-S5 文档 | ⬜ 未开始 | 骨架见 `docs/` |
