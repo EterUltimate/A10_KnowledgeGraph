@@ -6,7 +6,12 @@
  */
 import { getSession } from '@/lib/db/neo4j';
 import { RELATION_TYPE_LABELS, type GraphData, type KnowledgePoint, type Relation } from '@/types';
-import { normalizeRelationType, type GraphStore, type RelationInput } from '@/lib/db/graph-store';
+import {
+  cypherSafeIdentifier,
+  normalizeRelationType,
+  type GraphStore,
+  type RelationInput,
+} from '@/lib/db/graph-store';
 
 /** 运行时校验关系类型，防止 Cypher 注入（仅允许白名单内插） */
 function assertRelationType(type: string): 'PREREQUISITE' | 'CONTAINS' | 'RELATED' {
@@ -103,7 +108,7 @@ export class Neo4jGraphStore implements GraphStore {
           await tx.run(
             `MATCH (a:Knowledge {courseId: $courseId, name: $source})
              MATCH (b:Knowledge {courseId: $courseId, name: $target})
-             MERGE (a)-[r:${safeType}]->(b)`,
+             MERGE (a)-[r:${cypherSafeIdentifier(safeType)}]->(b)`,
             { courseId, source: rel.source, target: rel.target },
           );
         }
@@ -247,7 +252,7 @@ export class Neo4jGraphStore implements GraphStore {
       await session.run(
         `MATCH (a:Knowledge {courseId: $courseId, name: $source})
          MATCH (b:Knowledge {courseId: $courseId, name: $target})
-         MERGE (a)-[r:${safeType}]->(b)`,
+         MERGE (a)-[r:${cypherSafeIdentifier(safeType)}]->(b)`,
         { courseId, source: relation.source, target: relation.target },
       );
       return { source: relation.source, target: relation.target, type: safeType };
@@ -262,7 +267,7 @@ export class Neo4jGraphStore implements GraphStore {
     try {
       const safeType = assertRelationType(relation.type);
       const result = await session.run(
-        `MATCH (a:Knowledge {courseId: $courseId, name: $source})-[r:${safeType}]->(b:Knowledge {courseId: $courseId, name: $target})
+        `MATCH (a:Knowledge {courseId: $courseId, name: $source})-[r:${cypherSafeIdentifier(safeType)}]->(b:Knowledge {courseId: $courseId, name: $target})
          DELETE r
          RETURN count(r) AS deleted`,
         { courseId, source: relation.source, target: relation.target },

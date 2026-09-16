@@ -107,3 +107,15 @@ async function createStore(): Promise<GraphStore> {
 export function normalizeRelationType(type: string): RelationType | null {
   return (['PREREQUISITE', 'CONTAINS', 'RELATED'] as const).find((t) => t === type) ?? null;
 }
+
+/**
+ * Cypher 标识符安全内插（A-5 硬化）：标签/关系类型在 Cypher 中无法参数化，必须内插。
+ * 只放行 `大写字母开头的 [A-Z0-9_]` 并加反引号包裹，杜绝标识符注入；
+ * neo4j-store.ts 所有 Cypher 内插点统一走此助手（assertRelationType 模式的推广）。
+ */
+export function cypherSafeIdentifier(name: string): string {
+  if (!/^[A-Z][A-Z0-9_]*$/.test(name)) {
+    throw new Error(`[graph-store] 非法 Cypher 标识符: ${name}`);
+  }
+  return `\`${name}\``;
+}

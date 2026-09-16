@@ -7,6 +7,7 @@ import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { ok, fail } from '@/lib/http';
 import { requireTeacher } from '@/lib/auth-guard';
+import { checkRateLimit, clientIp } from '@/lib/rate-limit';
 import { RELATION_TYPES } from '@/types';
 import { addRelation, deleteRelation, getRelations } from '@/services/graph.service';
 
@@ -37,6 +38,17 @@ export async function POST(request: NextRequest) {
   const guard = await requireTeacher();
   if (guard) return guard;
 
+  // 限流（A-5）：写操作单 IP 每分钟 60 次
+  const limit = checkRateLimit(`relation-write:${clientIp(request.headers)}`, {
+    windowMs: 60_000,
+    max: 60,
+  });
+  if (!limit.ok) {
+    return fail(`请求过于频繁，请 ${limit.retryAfterSec} 秒后重试`, 429, {
+      'Retry-After': String(limit.retryAfterSec),
+    });
+  }
+
   const json = await request.json().catch(() => null);
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {
@@ -55,6 +67,17 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   const guard = await requireTeacher();
   if (guard) return guard;
+
+  // 限流（A-5）：写操作单 IP 每分钟 60 次
+  const limit = checkRateLimit(`relation-write:${clientIp(request.headers)}`, {
+    windowMs: 60_000,
+    max: 60,
+  });
+  if (!limit.ok) {
+    return fail(`请求过于频繁，请 ${limit.retryAfterSec} 秒后重试`, 429, {
+      'Retry-After': String(limit.retryAfterSec),
+    });
+  }
 
   const sp = request.nextUrl.searchParams;
   const source = sp.get('source');

@@ -7,6 +7,37 @@ import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { generateText, type LanguageModel } from 'ai';
 import { config, isLLMConfigured } from '@/lib/config';
 
+/**
+ * LLM Base URL SSRF 防护（A-5）：
+ * - 必须为合法 URL 且默认要求 https（本地调试可用 LLM_ALLOW_INSECURE_BASEURL=1 放开 http）
+ * - 拒绝指向内网/本机回环的地址（可用 LLM_ALLOW_LOCAL_LLM=1 放开，用于 Ollama 等本地推理）
+ * 返回 null 表示通过，否则返回拒绝原因（供 provider 初始化时快速失败）。
+ */
+export function assertLLMBaseURLSafe(baseURL: string): string | null {
+  let url: URL;
+  try {
+    url = new URL(baseURL);
+  } catch {
+    return `LLM_BASE_URL 不是合法 URL：${baseURL}`;
+  }
+  if (url.protocol !== 'https:' && process.env.LLM_ALLOW_INSECURE_BASEURL !== '1') {
+    return 'LLM_BASE_URL 必须使用 https（本地调试可设 LLM_ALLOW_INSECURE_BASEURL=1）';
+  }
+  const privateHost =
+    /^(localhost|127\.|10\.|192\.168\.|169\.254\.|0\.0\.0\.0|\[?::1\]?$|.*\.internal$|.*\.local$)/i;
+  if (privateHost.test(url.hostname) && process.env.LLM_ALLOW_LOCAL_LLM !== '1') {
+    return `LLM_BASE_URL 拒绝指向内网/回环地址（防 SSRF）：${url.hostname}（如确需本地推理可设 LLM_ALLOW_LOCAL_LLM=1）`;
+  }
+  return null;
+}
+
+if (isLLMConfigured()) {
+  const unsafe = assertLLMBaseURLSafe(config.llm.baseURL);
+  if (unsafe) {
+    throw new Error(`[provider] ${unsafe}`);
+  }
+}
+
 /** 创建一个指向 OpenAI 兼容 Base URL 的 provider（例如 DeepSeek: https://api.deepseek.com/v1） */
 export const provider = createOpenAICompatible({
   name: 'a10-llm',

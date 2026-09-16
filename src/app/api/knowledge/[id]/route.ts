@@ -7,6 +7,7 @@ import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { ok, fail } from '@/lib/http';
 import { requireTeacher } from '@/lib/auth-guard';
+import { checkRateLimit, clientIp } from '@/lib/rate-limit';
 import { deleteKnowledge, getKnowledgeById, updateKnowledge } from '@/services/graph.service';
 
 const patchSchema = z.object({
@@ -37,6 +38,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const guard = await requireTeacher();
   if (guard) return guard;
 
+  // 限流（A-5）：写操作单 IP 每分钟 30 次
+  const limit = checkRateLimit(`knowledge-write:${clientIp(request.headers)}`, {
+    windowMs: 60_000,
+    max: 30,
+  });
+  if (!limit.ok) {
+    return fail(`请求过于频繁，请 ${limit.retryAfterSec} 秒后重试`, 429, {
+      'Retry-After': String(limit.retryAfterSec),
+    });
+  }
+
   const { id } = await params;
   const json = await request.json().catch(() => null);
   const parsed = patchSchema.safeParse(json);
@@ -59,6 +71,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const guard = await requireTeacher();
   if (guard) return guard;
+
+  // 限流（A-5）：写操作单 IP 每分钟 30 次
+  const limit = checkRateLimit(`knowledge-write:${clientIp(_request.headers)}`, {
+    windowMs: 60_000,
+    max: 30,
+  });
+  if (!limit.ok) {
+    return fail(`请求过于频繁，请 ${limit.retryAfterSec} 秒后重试`, 429, {
+      'Retry-After': String(limit.retryAfterSec),
+    });
+  }
 
   const { id } = await params;
   try {

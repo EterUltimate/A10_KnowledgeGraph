@@ -8,6 +8,10 @@ export function ok<T>(data: T, status = 200): NextResponse<ApiResponse<T>> {
   return NextResponse.json<ApiResponse<T>>({ success: true, data }, { status });
 }
 
-export function fail(error: string, status = 400): NextResponse<ApiResponse<never>> {
-  return NextResponse.json<ApiResponse<never>>({ success: false, error }, { status });
+export function fail(
+  error: string,
+  status = 400,
+  headers?: Record<string, string>,
+): NextResponse<ApiResponse<never>> {
+  return NextResponse.json<ApiResponse<never>>({ success: false, error }, { status, headers });
 }
