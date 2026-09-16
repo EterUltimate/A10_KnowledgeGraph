@@ -6,7 +6,10 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './e2e',
-  fullyParallel: true,
+  // e2e 共享 dev server 状态（上传建图 → 后续用例依赖），全部串行保证确定性
+  fullyParallel: false,
+  workers: 1,
+  timeout: 60_000,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   reporter: 'html',

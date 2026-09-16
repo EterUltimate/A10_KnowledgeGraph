@@ -1,13 +1,21 @@
 /**
  * POST /api/qa — 课程智能问答（A10.md 十五、十六节）
- * 与前端 ai-sdk（v5）useChat 对接：接收 { messages }，用 streamText 返回 UI 数据流响应。
- * RAG：先检索教材文本块作为上下文，要求 LLM 只依据教材回答。
- * tier1：结构完整、检索为占位；tier2 落地检索质量与引用返回。
+ * 与前端 useChat（AI SDK v5）对接：接收 { messages, courseId }，返回 UI 消息流。
+ * 流程：取最后一条用户问题 → RAG 检索教材文本块 → 先写入"引用"数据部件 → LLM 流式生成。
+ * 有 LLM：streamText 流式回答；无 LLM（离线模式）：直接流式输出教材抽取式答案。
  */
-import { streamText, convertToModelMessages, type UIMessage } from 'ai';
-import { llm } from '@/lib/ai/provider';
+import {
+  streamText,
+  convertToModelMessages,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  type UIMessage,
+} from 'ai';
+import { llm, isLLMConfigured } from '@/lib/ai/provider';
 import { buildQASystemPrompt } from '@/lib/ai/prompts';
-import { retrieve } from '@/services/rag.service';
+import { answer, buildContext, buildReferences, retrieve } from '@/services/rag.service';
+import { getCourse } from '@/services/course.service';
+import type { A10UIMessage } from '@/types';
 
 /** 从 UIMessage 的 parts 中提取纯文本内容（AI SDK v5） */
 function extractText(message?: UIMessage): string {
@@ -27,17 +35,46 @@ export async function POST(request: Request) {
   // 取最后一个用户问题用于检索
   const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user');
   const question = extractText(lastUserMessage);
+  const course = courseId ? await getCourse(courseId) : null;
 
-  // RAG 检索教材上下文（TODO(tier2)：提升检索准确度并回传引用章节）
+  // RAG 检索教材上下文，构造引用
   const chunks = await retrieve(question, courseId);
-  const context = chunks.map((c) => c.content).join('\n\n');
+  const references = buildReferences(chunks);
 
-  const result = streamText({
-    model: llm,
-    system: buildQASystemPrompt(context || '（暂无检索到的教材内容）'),
-    messages: await convertToModelMessages(messages),
-    temperature: 0.3,
+  const stream = createUIMessageStream<A10UIMessage>({
+    execute: async ({ writer }) => {
+      // 引用先于回答写入，前端可在回答过程中/结束后展示"参考章节"
+      if (references.length > 0) {
+        writer.write({ type: 'data-references', id: 'references', data: references });
+      }
+
+      if (isLLMConfigured()) {
+        const result = streamText({
+          model: llm,
+          system: buildQASystemPrompt(
+            buildContext(chunks) || '（暂无检索到的教材内容）',
+            course?.name ?? '数据结构',
+          ),
+          messages: await convertToModelMessages(messages),
+          temperature: 0.3,
+        });
+        writer.merge(result.toUIMessageStream({ sendStart: false }));
+      } else {
+        // 离线模式：抽取式答案模拟流式输出，UI 行为与在线模式一致
+        const { answer: offlineAnswer } = await answer(question, courseId, course?.name);
+        const textId = 'offline-answer';
+        writer.write({ type: 'text-start', id: textId });
+        for (const piece of offlineAnswer.match(/[\s\S]{1,24}/g) ?? []) {
+          writer.write({ type: 'text-delta', id: textId, delta: piece });
+        }
+        writer.write({ type: 'text-end', id: textId });
+      }
+    },
+    onError: (err) => {
+      console.warn('[qa] 流式回答出错：', err instanceof Error ? err.message : err);
+      return '问答服务暂时不可用，请稍后重试。';
+    },
   });
 
-  return result.toUIMessageStreamResponse();
+  return createUIMessageStreamResponse({ stream });
 }

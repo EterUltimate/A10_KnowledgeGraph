@@ -1,11 +1,13 @@
 /**
+ * GET /api/knowledge?courseId= — 课程知识点列表（tier2 新增）
+ * 供学生端勾选"已掌握"、教师端管理列表使用。
  * POST /api/knowledge — 教师新增知识点（A10.md 十六节）
  * 请求体：{ name, definition, chapter, difficulty, courseId?, source? }
  */
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { ok, fail } from '@/lib/http';
-import { addKnowledge } from '@/services/graph.service';
+import { addKnowledge, listKnowledge } from '@/services/graph.service';
 
 const bodySchema = z.object({
   name: z.string().min(1),
@@ -15,6 +17,15 @@ const bodySchema = z.object({
   courseId: z.string().optional(),
   source: z.string().optional(),
 });
+
+export async function GET(request: NextRequest) {
+  const courseId = request.nextUrl.searchParams.get('courseId');
+  if (!courseId) {
+    return fail('缺少 courseId 参数');
+  }
+  const points = await listKnowledge(courseId);
+  return ok(points);
+}
 
 export async function POST(request: NextRequest) {
   const json = await request.json().catch(() => null);

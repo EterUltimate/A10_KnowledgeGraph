@@ -2,6 +2,7 @@
  * A10 领域类型定义
  * 对应 A10.md 十（知识点）、十一（关系）、十三（图谱返回）、十五（RAG）、十六（接口）节
  */
+import type { UIMessage } from 'ai';
 
 /** 关系类型：A10.md 十一节，只允许三类，其他关系一律丢弃 */
 export const RELATION_TYPES = ['PREREQUISITE', 'CONTAINS', 'RELATED'] as const;
@@ -27,7 +28,7 @@ export interface KnowledgePoint {
   courseId?: string;
 }
 
-/** 知识点之间的关系 */
+/** 知识点之间的关系（source/target 为课程内知识点名称） */
 export interface Relation {
   /** 起点知识点名称或 id */
   source: string;
@@ -74,14 +75,15 @@ export interface Student {
   courseId?: string;
 }
 
-/** 学生掌握状态 */
+/** 学生掌握状态（按 学生+课程 维度隔离，支持多课程） */
 export interface MasteryState {
   studentId: string;
-  /** 已掌握的知识点名称/ id 集合 */
+  courseId: string;
+  /** 已掌握的知识点名称集合 */
   mastered: string[];
 }
 
-/** 学习路径推荐结果（A10.md 十四节：推荐前 3 个知识点） */
+/** 学习路径推荐结果（A10.md 十四节：推荐前 N 个知识点） */
 export interface PathRecommendation {
   studentId: string;
   recommendations: Array<{
@@ -101,6 +103,14 @@ export interface TextChunk {
   source?: string;
 }
 
+/** 问答引用（A10.md 十五节：答案 + 参考教材章节） */
+export interface QAReference {
+  chunkId: string;
+  chapter?: string;
+  source?: string;
+  snippet: string;
+}
+
 /** 智能问答请求 */
 export interface QARequest {
   question: string;
@@ -108,16 +118,26 @@ export interface QARequest {
   studentId?: string;
 }
 
-/** 智能问答响应（A10.md 十五节：答案 + 参考教材章节） */
+/** 智能问答响应（非流式版本使用） */
 export interface QAResponse {
   answer: string;
-  /** 引用的教材章节/文本块 */
-  references: Array<{
-    chunkId: string;
-    chapter?: string;
-    source?: string;
-    snippet: string;
-  }>;
+  references: QAReference[];
+}
+
+/** POST /api/course/upload 返回结构 */
+export interface UploadResult {
+  courseId: string;
+  courseName?: string;
+  fileName: string;
+  knowledgeCount: number;
+  relationCount: number;
+  chunkCount: number;
+  status: 'completed';
+  /** 各阶段耗时（毫秒），对应赛题 60s 性能指标验证 */
+  timing: { parseMs: number; extractMs: number; totalMs: number };
+  /** true 表示未配置 LLM Key，走了内置演示数据（离线模式） */
+  demoMode: boolean;
+  message?: string;
 }
 
 /** 统一 API 响应包装 */
@@ -126,3 +146,6 @@ export interface ApiResponse<T> {
   data?: T;
   error?: string;
 }
+
+/** 前端 useChat 使用的消息类型：带 references 数据部件（问答引用章节） */
+export type A10UIMessage = UIMessage<Record<string, never>, { references: QAReference[] }>;
