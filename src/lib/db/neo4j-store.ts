@@ -6,7 +6,16 @@
  */
 import { getSession } from '@/lib/db/neo4j';
 import { RELATION_TYPE_LABELS, type GraphData, type KnowledgePoint, type Relation } from '@/types';
-import type { GraphStore, RelationInput } from '@/lib/db/graph-store';
+import { normalizeRelationType, type GraphStore, type RelationInput } from '@/lib/db/graph-store';
+
+/** 运行时校验关系类型，防止 Cypher 注入（仅允许白名单内插） */
+function assertRelationType(type: string): 'PREREQUISITE' | 'CONTAINS' | 'RELATED' {
+  const normalized = normalizeRelationType(type);
+  if (!normalized) {
+    throw new Error(`[neo4j-store] 非法关系类型: ${type}，仅允许 PREREQUISITE/CONTAINS/RELATED`);
+  }
+  return normalized;
+}
 
 /** neo4j-driver 返回的整数为 Integer 对象，统一转回 number */
 function toNum(value: unknown): number {
@@ -88,12 +97,13 @@ export class Neo4jGraphStore implements GraphStore {
             },
           );
         }
-        // 逐条 MERGE 关系（类型来自白名单，可安全内插为关系类型）
+        // 逐条 MERGE 关系（运行时校验类型白名单，防止 Cypher 注入）
         for (const rel of relations) {
+          const safeType = assertRelationType(rel.type);
           await tx.run(
             `MATCH (a:Knowledge {courseId: $courseId, name: $source})
              MATCH (b:Knowledge {courseId: $courseId, name: $target})
-             MERGE (a)-[r:${rel.type}]->(b)`,
+             MERGE (a)-[r:${safeType}]->(b)`,
             { courseId, source: rel.source, target: rel.target },
           );
         }
@@ -233,13 +243,14 @@ export class Neo4jGraphStore implements GraphStore {
          ON CREATE SET b.id = $idB, b.definition = '（教师手工创建，待补充定义）', b.chapter = '未分类', b.difficulty = 3`,
         { courseId, source: relation.source, target: relation.target, idA: crypto.randomUUID(), idB: crypto.randomUUID() },
       );
+      const safeType = assertRelationType(relation.type);
       await session.run(
         `MATCH (a:Knowledge {courseId: $courseId, name: $source})
          MATCH (b:Knowledge {courseId: $courseId, name: $target})
-         MERGE (a)-[r:${relation.type}]->(b)`,
+         MERGE (a)-[r:${safeType}]->(b)`,
         { courseId, source: relation.source, target: relation.target },
       );
-      return { source: relation.source, target: relation.target, type: relation.type };
+      return { source: relation.source, target: relation.target, type: safeType };
     } finally {
       await session.close();
     }
@@ -249,8 +260,9 @@ export class Neo4jGraphStore implements GraphStore {
     const courseId = relation.courseId ?? '';
     const session = getSession('WRITE');
     try {
+      const safeType = assertRelationType(relation.type);
       const result = await session.run(
-        `MATCH (a:Knowledge {courseId: $courseId, name: $source})-[r:${relation.type}]->(b:Knowledge {courseId: $courseId, name: $target})
+        `MATCH (a:Knowledge {courseId: $courseId, name: $source})-[r:${safeType}]->(b:Knowledge {courseId: $courseId, name: $target})
          DELETE r
          RETURN count(r) AS deleted`,
         { courseId, source: relation.source, target: relation.target },

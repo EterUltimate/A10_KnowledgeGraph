@@ -28,12 +28,18 @@ function loadChunkStore(): ChunkFileData {
   return globalForChunks.__a10Chunks;
 }
 
-/** 保存教材文本块（按课程覆盖写入，A10.md 十五节 步骤 24） */
+/** 保存教材文本块（按课程覆盖写入，重新上传同一课程时替换而非追加，A10.md 十五节 步骤 24） */
 export function saveChunks(chunks: TextChunk[]): void {
   const store = loadChunkStore();
+  // 按 courseId 分组，同一课程的块整体覆盖（避免重复上传导致语料膨胀）
+  const grouped = new Map<string, TextChunk[]>();
   for (const chunk of chunks) {
-    const list = store[chunk.courseId] ?? (store[chunk.courseId] = []);
+    const list = grouped.get(chunk.courseId) ?? [];
     list.push(chunk);
+    grouped.set(chunk.courseId, list);
+  }
+  for (const [courseId, courseChunks] of grouped) {
+    store[courseId] = courseChunks;
   }
   writeJsonFile(chunksFile(), store);
 }

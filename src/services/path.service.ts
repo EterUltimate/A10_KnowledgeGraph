@@ -9,7 +9,7 @@
  * 复杂度：O(V + E)，普通课程规模（<100 点）瞬时完成。
  */
 import type { KnowledgePoint, PathRecommendation, Relation } from '@/types';
-import { listKnowledge, getRelations } from '@/services/graph.service';
+import { listKnowledge, getPrerequisiteRelations } from '@/services/graph.service';
 import { getMastery } from '@/services/course.service';
 
 /**
@@ -92,11 +92,11 @@ export async function recommendPath(
   const [mastery, allPoints, prereqRelations] = await Promise.all([
     getMastery(studentId, courseId),
     listKnowledge(courseId),
-    getRelations(courseId),
+    getPrerequisiteRelations(courseId),
   ]);
   const recommendations = computeRecommendations(
     allPoints,
-    prereqRelations.filter((r) => r.type === 'PREREQUISITE'),
+    prereqRelations,
     new Set(mastery.mastered),
     limit,
   );
