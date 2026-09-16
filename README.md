@@ -77,8 +77,9 @@ npm run start
 | `npm run build` / `npm run start` | 生产构建 / 启动 |
 | `npm run typecheck` | TypeScript 类型检查 |
 | `npm run lint` | ESLint |
-| `npm test` | 单元测试（vitest，18 用例） |
+| `npm test` | 单元测试（vitest，21 用例） |
 | `npm run test:e2e` | Playwright 端到端（首次需 `npx playwright install chromium`） |
+| `npm run check` | 一键连通性检查（Neo4j / LLM / 解析，需服务已启动；`BASE_URL=` 可指定目标） |
 
 ## 四、操作流程（演示脚本）
 
