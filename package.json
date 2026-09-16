@@ -23,6 +23,7 @@
     "echarts-for-react": "^3.0.2",
     "neo4j-driver": "^5.28.1",
     "next": "^15.5.25",
+    "next-auth": "^5.0.0-beta.32",
     "pdf-parse": "^1.1.1",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",

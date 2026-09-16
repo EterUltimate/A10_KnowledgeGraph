@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import path from 'path';
 
 /**
@@ -16,18 +16,59 @@ import path from 'path';
 const SAMPLE_TXT = path.resolve(__dirname, '../assets/数据结构-示例教材.txt');
 const COURSE_ID = `e2e-${Date.now()}`;
 
+const ACCOUNTS = {
+  teacher: { username: 'teacher', password: 'teach123456' },
+  student: { username: 'student', password: 'study123456' },
+};
+
+/** 通过登录页登录指定演示账号（A-1 鉴权流程）；轮询会话接口确保 cookie 建立后再继续 */
+async function login(page: Page, account: { username: string; password: string }) {
+  await page.goto('/login');
+  await page.getByLabel('用户名').fill(account.username);
+  await page.getByLabel('密码').fill(account.password);
+  await page.getByRole('button', { name: '登录', exact: true }).click();
+  await expect
+    .poll(
+      async () => {
+        const res = await page.request.get('/api/auth/session');
+        return ((await res.json()) as { user?: { role?: string } })?.user?.role ?? null;
+      },
+      { timeout: 10_000 },
+    )
+    .toBe(account === ACCOUNTS.teacher ? 'teacher' : 'student');
+}
+
 test.describe('A10 冒烟测试', () => {
   test('首页可访问并展示系统标题', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1 })).toContainText('A10');
   });
 
-  test('关键页面路由可达', async ({ page }) => {
-    const routes = ['/teacher/upload', '/teacher/knowledge', '/student/graph', '/student/path', '/student/qa'];
+  test('关键页面路由可达（学生端无需登录）', async ({ page }) => {
+    const routes = ['/student/graph', '/student/path', '/student/qa', '/login'];
     for (const route of routes) {
       const res = await page.goto(route);
       expect(res?.ok(), `路由 ${route} 应可访问`).toBeTruthy();
     }
+  });
+
+  test('教师页面未登录会跳转登录页（A-1 鉴权守卫）', async ({ page }) => {
+    const res = await page.goto('/teacher/upload');
+    expect(res?.ok()).toBeTruthy();
+    await expect(page).toHaveURL(/\/login/);
+  });
+
+  test('教师写 API 鉴权：未登录 401 / 学生角色 403（A-1）', async ({ page }) => {
+    const unauthorized = await page.request.post('/api/knowledge', {
+      data: { name: 'x', definition: 'x', chapter: 'x', difficulty: 1 },
+    });
+    expect(unauthorized.status()).toBe(401);
+
+    await login(page, ACCOUNTS.student);
+    const forbidden = await page.request.post('/api/knowledge', {
+      data: { name: 'x', definition: 'x', chapter: 'x', difficulty: 1 },
+    });
+    expect(forbidden.status()).toBe(403);
   });
 });
 
@@ -36,6 +77,7 @@ test.describe('A10 主流程（离线演示模式）', () => {
   test.describe.configure({ mode: 'serial' });
 
   test('教师上传教材 → 自动生成知识图谱（≥20 个知识点）', async ({ page }) => {
+    await login(page, ACCOUNTS.teacher);
     await page.goto('/teacher/upload');
 
     await page.getByLabel('课程 ID（英文标识）').fill(COURSE_ID);
@@ -108,6 +150,7 @@ test.describe('A10 主流程（离线演示模式）', () => {
   });
 
   test('教师修正图谱：新增知识点 → 编辑 → 删除', async ({ page }) => {
+    await login(page, ACCOUNTS.teacher);
     await page.goto(`/teacher/knowledge?courseId=${COURSE_ID}`);
 
     // 新增

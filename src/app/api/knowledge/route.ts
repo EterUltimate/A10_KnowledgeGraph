@@ -7,6 +7,7 @@
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { ok, fail } from '@/lib/http';
+import { requireTeacher } from '@/lib/auth-guard';
 import { addKnowledge, listKnowledge } from '@/services/graph.service';
 
 const bodySchema = z.object({
@@ -34,6 +35,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const guard = await requireTeacher();
+  if (guard) return guard;
+
   const json = await request.json().catch(() => null);
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {

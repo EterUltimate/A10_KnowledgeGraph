@@ -6,6 +6,7 @@
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { ok, fail } from '@/lib/http';
+import { requireTeacher } from '@/lib/auth-guard';
 import { RELATION_TYPES } from '@/types';
 import { addRelation, deleteRelation, getRelations } from '@/services/graph.service';
 
@@ -33,6 +34,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const guard = await requireTeacher();
+  if (guard) return guard;
+
   const json = await request.json().catch(() => null);
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {
@@ -49,6 +53,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const guard = await requireTeacher();
+  if (guard) return guard;
+
   const sp = request.nextUrl.searchParams;
   const source = sp.get('source');
   const target = sp.get('target');

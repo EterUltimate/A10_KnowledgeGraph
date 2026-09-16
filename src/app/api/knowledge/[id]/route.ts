@@ -6,6 +6,7 @@
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { ok, fail } from '@/lib/http';
+import { requireTeacher } from '@/lib/auth-guard';
 import { deleteKnowledge, getKnowledgeById, updateKnowledge } from '@/services/graph.service';
 
 const patchSchema = z.object({
@@ -33,6 +34,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const guard = await requireTeacher();
+  if (guard) return guard;
+
   const { id } = await params;
   const json = await request.json().catch(() => null);
   const parsed = patchSchema.safeParse(json);
@@ -53,6 +57,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const guard = await requireTeacher();
+  if (guard) return guard;
+
   const { id } = await params;
   try {
     const deleted = await deleteKnowledge(id);
