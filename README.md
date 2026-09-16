@@ -1,41 +1,53 @@
 # A10 课程知识图谱智能构建与学习导航系统
 
-> 浙江师范大学第九届服务外包大赛 · 赛题 A10
-> 技术栈：Next.js 15 (App Router) + TypeScript + Vercel AI SDK + Neo4j · 全 TypeScript 全栈
-> 当前阶段：**tier1 框架骨架**（接口/服务桩代码，业务逻辑待 tier2 实现）
+> 浙江师范大学第九届服务外包大赛 · 赛题 A10【金扬智能】
+> 技术栈：Next.js 15 (App Router) + TypeScript + Vercel AI SDK + Neo4j(可选) + ECharts · 全 TypeScript 全栈
+> 状态：**tier2 功能完整实现**（文档解析 → AIGC 知识抽取 → 图谱可视化 → 学习导航 → RAG 问答 全链路可用）
 
-## 一、系统目标
+## 一、系统概览
 
-核心流程（对应 `A10.md` 一节）：
+核心流程（对应赛题任务要求）：
 
 ```
-课程资料上传 → 文档解析 → 知识点抽取与关系构建 → 知识图谱生成与可视化
-            → 个性化学习导航 → 课程智能问答
+课程资料上传 → 文档解析（PDF/TXT）→ 清洗与章节切块 → LLM 知识点/关系抽取（AIGC）
+            → 图数据库写入 → 交互式知识图谱可视化 → 个性化学习路径推荐 + RAG 智能问答
 ```
 
-14 天版本范围：单课程《数据结构》，支持 PDF / TXT；知识图谱 20–50 个知识点；关系含
-`PREREQUISITE`（前置）、`CONTAINS`（包含）、`RELATED`（相关）三类；教师端上传/修改、学生端图谱浏览/学习路径/问答。
+**两套运行模式，随时切换：**
 
-## 二、技术选型（A10.md → TypeScript 栈映射）
+| 模式 | 触发条件 | 抽取/问答行为 |
+| --- | --- | --- |
+| **在线模式** | `.env` 配置 `LLM_API_KEY`（DeepSeek/通义等 OpenAI 兼容接口） | LLM 真实抽取 + 流式生成回答 |
+| **离线演示模式** | 未配置 Key，自动启用 | 内置《数据结构》演示图谱（35 知识点/49 关系）+ 教材摘录式问答 |
 
-| A10.md 原方案 | 本项目实现 |
-| --- | --- |
-| FastAPI 后端 | Next.js App Router `route.ts` API |
-| Vue / HTML 前端 | React 19 + Tailwind CSS |
-| OpenAI 兼容 API（Python SDK） | Vercel AI SDK `@ai-sdk/openai-compatible` |
-| LLM 抽取 JSON 校验 | `generateObject` + `zod` schema |
-| RAG 流式问答 | `streamText`（后端）+ `useChat`（前端） |
-| Neo4j（Python driver） | `neo4j-driver`（Node） |
-| PyMuPDF / pypdf | `pdf-parse` + Node `fs` |
-| ECharts Graph / AntV G6 | `echarts` + `echarts-for-react` |
+> 离线模式保证评审环境**零配置可跑通全部功能**；填入 Key 即切换在线模式，代码零改动。
 
-## 三、环境要求
+## 二、功能清单（对照赛题任务要求）
 
-- Node.js >= 20.9.0
-- Neo4j Desktop 5.x（本地 DBMS，例如 `a10-knowledge`）
-- 一个 OpenAI 兼容的 LLM API Key（DeepSeek / Qwen 等）
+| 赛题要求 | 实现 | 入口 |
+| --- | --- | --- |
+| 文档上传与解析（PDF/TXT 两种格式） | pdf-parse / UTF-8+GBK 编码探测 | 教师端·上传资料 |
+| 文本预处理（章节分割、段落清洗） | 页码/控制字符清洗、"第X章"标题感知切块 | 同上（自动） |
+| 基于大模型的知识抽取（实体+关系） | generateObject+zod 分批抽取、三重清洗 | 同上（自动） |
+| 图数据库写入与查询 | GraphStore 抽象层：Neo4j(Cypher) / 内置 JSON 存储双实现 | 自动 |
+| 前端可视化（图谱渲染+交互） | ECharts force 图：缩放/拖拽/点击详情/三类关系分色 | 学生端·知识图谱 |
+| 知识融合与消歧（加分项） | 名称归一化去重、同义合并、端点校验 | 抽取管道内 |
+| 智能问答（检索+生成+引用标注） | 中文 bigram 分词检索打分 + streamText 流式回答 + 参考章节引用块 | 学生端·智能问答 |
+| 学习路径推荐（图遍历） | PREREQUISITE 图遍历：解锁价值/难度/章节三重排序 | 学生端·学习路径 |
+| 用户界面（教师端+学生端） | Next.js App Router，6 个页面 | 顶部导航 |
+| 教师手动修正图谱（加分项） | 知识点编辑/删除、关系增删、图谱实时预览 | 教师端·知识点管理 |
+| 多课程管理（≥2 门） | 课程注册表 + 全数据按 courseId 隔离 | 各页课程下拉框 |
+| 性能：解析≤60s / 问答≤15s | 上传返回耗时分解（parse/extract/total）；流式首字快 | 上传结果卡片 |
 
-## 四、快速开始
+## 三、快速开始（安装部署）
+
+### 环境要求
+
+- Node.js ≥ 20.9.0（推荐 22/24 LTS）
+- 可选：Neo4j Desktop 5.x 或 Neo4j AuraDB 免费实例（不装也能跑，见"存储模式"）
+- 可选：DeepSeek / 阿里通义等 OpenAI 兼容 API Key
+
+### 部署步骤
 
 ```powershell
 # 1. 安装依赖
@@ -43,64 +55,117 @@ npm install
 
 # 2. 配置环境变量
 copy .env.example .env
-# 编辑 .env，填入 NEO4J_* 与 LLM_* 真实值
+# 按需编辑 .env（三项都可以不配，系统自动降级：无 Key→离线演示模式；无 Neo4j→JSON 存储）
 
-# 3. 启动开发服务器
+# 3. 启动
 npm run dev
 # 打开 http://localhost:3000
-
-# 其他命令
-npm run lint        # ESLint
-npm run typecheck   # tsc --noEmit
-npm run build       # 生产构建
-npm run test:e2e    # Playwright（tier2 补充用例）
 ```
 
-## 五、Day 1 三个连通性测试（A10.md 二十二节）
+### 生产构建
 
-正式开发前必须先跑通以下三点，桩函数已预留，tier2 落地实现：
-
-1. **Node/Next 是否正常** — `npm run dev` 能启动首页。
-2. **Neo4j 连接** — `src/lib/db/neo4j.ts` 的 `verifyConnectivity()`，创建一个 `Knowledge` 节点。
-3. **LLM API 连接** — `src/lib/ai/provider.ts` 的模型实例能返回一句文本。
-
-> 三个测试全部成功后再开始业务开发，避免"写完前端才发现数据库/API 不可用"。
-
-## 六、目录结构
-
-```
-A10_KnowledgeGraph/
-├─ src/
-│  ├─ app/                    # Next.js App Router（页面 + API 路由）
-│  │  ├─ api/                 # 8 个后端接口（对齐 A10.md 十六节）
-│  │  ├─ teacher/             # 教师端：上传 / 知识点管理
-│  │  └─ student/             # 学生端：图谱 / 学习路径 / 问答
-│  ├─ components/             # 前端组件桩（GraphView / ChatPanel 等）
-│  ├─ lib/                    # 基础设施（config / db / ai）
-│  ├─ services/               # 服务层桩（document / graph / path / rag / course）
-│  └─ types/                  # 领域类型 + zod schema
-├─ data/                      # 教材与测试数据（PDF/TXT）
-├─ e2e/                       # Playwright 端到端测试（tier2 展开）
-├─ docs/                      # S1-S5 交付文档骨架
-└─ ...配置文件
+```powershell
+npm run build
+npm run start
 ```
 
-## 七、API 接口一览（A10.md 十六节）
+### 常用命令
 
-| 接口 | 方法 | 功能 | 路由文件 |
-| --- | --- | --- | --- |
-| `/api/course/upload` | POST | 上传课程资料 | `src/app/api/course/upload/route.ts` |
-| `/api/course/list` | GET | 课程列表 | `src/app/api/course/list/route.ts` |
-| `/api/graph/{courseId}` | GET | 获得知识图谱 | `src/app/api/graph/[courseId]/route.ts` |
-| `/api/knowledge/{id}` | GET | 知识点详情 | `src/app/api/knowledge/[id]/route.ts` |
-| `/api/knowledge` | POST | 教师新增知识点 | `src/app/api/knowledge/route.ts` |
-| `/api/relation` | POST | 教师新增关系 | `src/app/api/relation/route.ts` |
-| `/api/path/{studentId}` | GET | 学习路径推荐 | `src/app/api/path/[studentId]/route.ts` |
-| `/api/qa` | POST | 课程智能问答 | `src/app/api/qa/route.ts` |
+| 命令 | 说明 |
+| --- | --- |
+| `npm run dev` | 开发服务器 |
+| `npm run build` / `npm run start` | 生产构建 / 启动 |
+| `npm run typecheck` | TypeScript 类型检查 |
+| `npm run lint` | ESLint |
+| `npm test` | 单元测试（vitest，18 用例） |
+| `npm run test:e2e` | Playwright 端到端（首次需 `npx playwright install chromium`） |
 
-## 八、阶段说明
+## 四、操作流程（演示脚本）
 
-- **tier1（当前）**：目录骨架 + 全部核心接口/服务/组件桩代码，可编译、可跑通 UI 空流程。
-  桩函数以 `// TODO(tier2)` 标记，返回结构化占位数据。
-- **tier2（后续）**：填充文档解析、LLM 抽取、Neo4j 读写、图遍历、RAG 检索等真实业务逻辑；
-  补齐 Playwright 用例与 S1-S5 文档正文。
+**教师侧：**
+1. 首页 → 教师端「上传课程资料」：填课程 ID/名称（如 `data-structures` / 数据结构），选择 PDF 或 TXT 教材 → 点击上传；
+2. 等待生成完成卡片（展示知识点数、关系数、耗时分解）；
+3. 「知识点管理」页：查看图谱实时预览，编辑/删除知识点，增删三类关系（手动修正，赛题加分项）。
+
+**学生侧：**
+1. 「知识图谱」页：切换课程，缩放/拖拽图谱，点击节点查看定义/章节/难度，勾选"已掌握"；
+2. 「学习路径」页：勾选已掌握知识点 → 系统基于前置关系推荐下一步学什么（含推荐理由）；
+3. 「智能问答」页：输入问题（如"栈和队列有什么区别？"）→ 流式回答 + 参考章节引用块。
+
+## 五、配置说明（.env）
+
+| 变量 | 默认值 | 说明 |
+| --- | --- | --- |
+| `LLM_API_KEY` | 空 | OpenAI 兼容 Key；留空 = 离线演示模式 |
+| `LLM_BASE_URL` | `https://api.deepseek.com/v1` | 通义：`https://dashscope.aliyuncs.com/compatible-mode/v1` |
+| `LLM_MODEL` | `deepseek-chat` | 通义推荐 `qwen-plus` |
+| `GRAPH_STORE` | `auto` | `auto`=有 Neo4j 配置则用之（连不上自动降级 JSON）/ `neo4j` / `json` |
+| `NEO4J_URI` / `NEO4J_USER` / `NEO4J_PASSWORD` | 本地默认 | Neo4j 连接信息 |
+| `RAG_TOP_K` / `RAG_CHUNK_SIZE` | 4 / 800 | 检索块数 / 切块字数 |
+| `MAX_FILE_SIZE` | 20MB | 上传大小上限 |
+| `DATA_DIR` | `./data/store` | JSON 存储目录（课程/掌握状态/图谱兜底/RAG 语料） |
+
+> ⚠️ API Key 只放 `.env`（已 gitignore），不要提交到仓库。
+
+## 六、常见问题（FAQ）
+
+**Q1：没有 Neo4j 也没有 API Key，能演示吗？**
+能。默认即离线演示模式 + 内置 JSON 存储，全部功能可用。上传任意教材 TXT 后，图谱为内置演示数据集，
+问答基于你上传文档的真实内容做检索摘录。适合快速评审。
+
+**Q2：Neo4j 连接失败会怎样？**
+`GRAPH_STORE=auto`（默认）时自动降级 JSON 存储并在控制台告警，服务不中断；`GRAPH_STORE=neo4j` 时强制使用 Neo4j，连接失败则接口报错（用于部署验证）。
+
+**Q3：上传 PDF 没有抽取到知识点？**
+扫描版（图片型）PDF 无文本层，解析结果为空。请改用文字版 PDF 或 TXT；离线模式下会自动回退内置语料保证问答可用。
+
+**Q4：中文 TXT 打开乱码？**
+系统已做 UTF-8/GBK 自动探测（优先 UTF-8，出现替换符自动回退 GBK），常见编码均可正确解析。
+
+**Q5：抽取的知识点/关系有错误怎么办？**
+赛题允许一定误差（准确率≥70%），教师端可直接编辑/删除修正；改进路线见 `docs/extraction-accuracy-report.md`。
+
+**Q6：如何重置演示数据？**
+停止服务后删除 `data/store/` 目录（课程、图谱、掌握状态、问答语料都会重建）。
+
+## 七、架构与目录
+
+```
+src/
+├─ app/
+│  ├─ api/                  # 10 个 REST 端点（upload/list/graph/knowledge/relation/mastery/path/qa）
+│  ├─ teacher/              # 教师端：上传 / 图谱修正管理
+│  └─ student/              # 学生端：图谱 / 学习路径 / 问答
+├─ components/              # GraphView / ChatPanel / KnowledgeChecklist / CourseSelect ...
+├─ services/                # 业务服务层（document/graph/course/path/rag）
+├─ lib/
+│  ├─ db/graph-store.ts     # 图存储抽象 + 工厂（Neo4j / JSON 双实现自动切换）
+│  ├─ ai/                   # provider / prompts / schemas / 抽取实现 / 内置演示数据集
+│  └─ config.ts             # 环境变量集中读取
+└─ types/                   # 领域类型 + zod schema
+data/store/                  # 运行时 JSON 存储（gitignore）
+assets/                      # 示例教材（图谱构建示例的原始文档）
+docs/                        # 交付文档（提示词记录/准确率报告/问答测试集/图谱示例/S1-S5）
+e2e/                         # Playwright 主流程测试
+tests/unit/                  # vitest 单元测试
+```
+
+**分层原则**：API 路由只做参数校验与编排；业务规则在 services；基础设施（存储/LLM）在 lib 并以接口抽象，
+替换 Neo4j↔JSON、DeepSeek↔通义 均不触碰业务代码（可维护性设计）。
+
+## 八、测试
+
+| 层级 | 内容 | 命令 |
+| --- | --- | --- |
+| 单元测试 | 切块/清洗/编码探测、检索打分、路径推荐算法、关系清洗 | `npm test`（18 用例） |
+| 端到端 | 上传建图 → 图谱浏览 → 掌握标记 → 路径推荐 → 问答引用 → 教师修正，全离线可回归 | `npm run test:e2e` |
+
+## 九、交付文档索引
+
+| 材料 | 位置 |
+| --- | --- |
+| 提示词工程完整记录 | [docs/prompt-engineering.md](docs/prompt-engineering.md) |
+| 知识抽取准确率测试报告 | [docs/extraction-accuracy-report.md](docs/extraction-accuracy-report.md) |
+| 智能问答测试集与结果 | [docs/qa-test-set.md](docs/qa-test-set.md) |
+| 图谱构建示例（含原始文档片段） | [docs/graph-construction-example.md](docs/graph-construction-example.md) |
+| 赛事提交材料 S1-S5 | [docs/README.md](docs/README.md) |

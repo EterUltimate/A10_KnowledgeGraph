@@ -61,7 +61,7 @@ export default function HomePage() {
       </section>
 
       <p className="text-center text-xs text-gray-400">
-        当前为 tier1 框架骨架，接口/服务为桩实现，业务逻辑待 tier2 落地。
+        支持多课程管理 · PDF/TXT 上传 · 离线演示模式（无需 API Key）· 图存储可切换 Neo4j / 内置 JSON 存储
       </p>
     </div>
   );
