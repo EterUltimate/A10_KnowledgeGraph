@@ -22,8 +22,14 @@ export async function GET(request: NextRequest) {
   if (!courseId) {
     return fail('缺少 courseId 参数');
   }
-  const relations = await getRelations(courseId);
-  return ok(relations);
+  try {
+    const relations = await getRelations(courseId);
+    return ok(relations);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : '存储层异常';
+    console.error('[api/relation GET]', message);
+    return fail(`关系列表查询失败：${message}`, 500);
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -32,8 +38,14 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return fail(`参数校验失败：${parsed.error.message}`);
   }
-  const created = await addRelation(parsed.data);
-  return ok(created, 201);
+  try {
+    const created = await addRelation(parsed.data);
+    return ok(created, 201);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : '存储层异常';
+    console.error('[api/relation POST]', message);
+    return fail(`关系创建失败：${message}`, 500);
+  }
 }
 
 export async function DELETE(request: NextRequest) {
@@ -50,9 +62,15 @@ export async function DELETE(request: NextRequest) {
     return fail('参数不完整：需要 source、target、type（query 参数）');
   }
 
-  const deleted = await deleteRelation({ ...parsed.data, courseId });
-  if (!deleted) {
-    return fail('关系不存在', 404);
+  try {
+    const deleted = await deleteRelation({ ...parsed.data, courseId });
+    if (!deleted) {
+      return fail('关系不存在', 404);
+    }
+    return ok({ deleted: true });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : '存储层异常';
+    console.error('[api/relation DELETE]', message);
+    return fail(`关系删除失败：${message}`, 500);
   }
-  return ok({ deleted: true });
 }

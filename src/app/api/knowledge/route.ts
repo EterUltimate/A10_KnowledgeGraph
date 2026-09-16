@@ -23,8 +23,14 @@ export async function GET(request: NextRequest) {
   if (!courseId) {
     return fail('缺少 courseId 参数');
   }
-  const points = await listKnowledge(courseId);
-  return ok(points);
+  try {
+    const points = await listKnowledge(courseId);
+    return ok(points);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : '存储层异常';
+    console.error('[api/knowledge GET]', message);
+    return fail(`知识点列表查询失败：${message}`, 500);
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -33,6 +39,12 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return fail(`参数校验失败：${parsed.error.message}`);
   }
-  const created = await addKnowledge(parsed.data);
-  return ok(created, 201);
+  try {
+    const created = await addKnowledge(parsed.data);
+    return ok(created, 201);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : '存储层异常';
+    console.error('[api/knowledge POST]', message);
+    return fail(`知识点创建失败：${message}`, 500);
+  }
 }
