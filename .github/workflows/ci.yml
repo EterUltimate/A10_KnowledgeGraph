@@ -36,8 +36,17 @@ jobs:
       - name: Typecheck (tsc --noEmit)
         run: npm run typecheck
 
-      - name: Unit tests (vitest)
-        run: npm test
+      - name: Unit tests with coverage (vitest)
+        run: npm run test:coverage
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+          if-no-files-found: ignore
 
       - name: Build (next build)
         run: npm run build

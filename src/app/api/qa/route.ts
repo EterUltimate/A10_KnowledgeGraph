@@ -27,10 +27,13 @@ function extractText(message?: UIMessage): string {
 }
 
 export async function POST(request: Request) {
-  const { messages, courseId } = (await request.json()) as {
-    messages: UIMessage[];
-    courseId?: string;
-  };
+  let payload: { messages?: UIMessage[]; courseId?: string };
+  try {
+    payload = (await request.json()) as { messages?: UIMessage[]; courseId?: string };
+  } catch {
+    return Response.json({ success: false, error: '请求体不是合法 JSON' }, { status: 400 });
+  }
+  const { messages = [], courseId } = payload;
 
   // 取最后一个用户问题用于检索
   const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user');
