@@ -19,6 +19,10 @@ export default defineConfig({
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    // B-6 跨浏览器冒烟：firefox/webkit 只跑「冒烟测试」组（首页/路由/鉴权守卫），
+    // 主流程串行组仍以 chromium 为准，控制多浏览器 CI 时长
+    { name: 'firefox-smoke', use: { ...devices['Desktop Firefox'] }, grep: /冒烟/ },
+    { name: 'webkit-smoke', use: { ...devices['Desktop Webkit'] }, grep: /冒烟/ },
   ],
   // 运行 e2e 前自动拉起 dev server（tier2 可改为 build+start）
   webServer: {
