@@ -60,7 +60,7 @@ jobs:
           LLM_MODEL: deepseek-chat
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium firefox webkit
 
       - name: Run Playwright E2E
         run: npm run test:e2e
