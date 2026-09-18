@@ -13,7 +13,8 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "check": "node scripts/check-connectivity.mts"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^1.0.19",
