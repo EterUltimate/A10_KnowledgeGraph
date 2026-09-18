@@ -1,0 +1,57 @@
+name: 开发任务 (Task)
+description: 登记一个开发任务/进度单元，供团队成员认领并通过 PR 完成
+title: "[Task] "
+labels: ["task"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        每个开发任务对应一个 Issue，完成后通过 PR 关闭（PR 描述中写 `Closes #编号`）。
+  - type: dropdown
+    id: module
+    attributes:
+      label: 所属模块
+      options:
+        - 文档解析 document
+        - AI 抽取 ai
+        - 图谱 graph / Neo4j
+        - 学习路径 path
+        - RAG 问答 rag
+        - 前端 UI
+        - 测试 e2e
+        - CI / 工程配置
+        - 文档 docs
+    validations:
+      required: true
+  - type: dropdown
+    id: role
+    attributes:
+      label: 建议负责角色 (A10.md 十七节)
+      options:
+        - 学生A 前端
+        - 学生B 后端
+        - 学生C AI
+        - 学生D 数据库/图算法
+        - 学生E 测试/材料
+        - 项目经理
+        - 技术经理
+        - 客户关系经理
+    validations:
+      required: false
+  - type: textarea
+    id: detail
+    attributes:
+      label: 任务描述
+      placeholder: 要做什么、验收标准、对应 A10.md 的哪一节
+    validations:
+      required: true
+  - type: dropdown
+    id: tier
+    attributes:
+      label: 阶段
+      options:
+        - tier1 框架
+        - tier2 实现
+        - 演示/文档
+    validations:
+      required: true
