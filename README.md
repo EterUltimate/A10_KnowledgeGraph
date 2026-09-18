@@ -104,8 +104,22 @@ npm run start
 | `RAG_TOP_K` / `RAG_CHUNK_SIZE` | 4 / 800 | 检索块数 / 切块字数 |
 | `MAX_FILE_SIZE` | 20MB | 上传大小上限 |
 | `DATA_DIR` | `./data/store` | JSON 存储目录（课程/掌握状态/图谱兜底/RAG 语料） |
+| `AUTH_SECRET` / `DEMO_TEACHER_USER` 等 | 见 `.env.example` | 登录会话密钥与演示账号（教师/学生角色） |
 
 > ⚠️ API Key 只放 `.env`（已 gitignore），不要提交到仓库。
+
+### 登录与角色（A-1）
+
+教师端写操作（上传课程、新增/编辑/删除知识点与关系）需要登录教师账号；学生端浏览图谱、
+学习路径、智能问答、掌握标记无需登录即可使用。
+
+- 登录入口：`/login`；未登录访问教师页会自动跳转登录页（带 callbackUrl）
+- 演示账号：教师 `teacher / teach123456`，学生 `student / study123456`
+  （可用 `.env` 的 `DEMO_TEACHER_USER` / `DEMO_TEACHER_PASS` / `DEMO_STUDENT_USER` /
+  `DEMO_STUDENT_PASS` 覆盖；缺省值仅用于本地演示与 e2e，生产必须修改）
+- 会话为 JWT（Auth.js v5 Credentials Provider，无数据库依赖），签名密钥 `AUTH_SECRET`，
+  生产部署必须改为强随机值
+- 未登录/学生角色调用教师写 API 返回 401/403（middleware 与路由内守卫双层校验）
 
 ## 六、常见问题（FAQ）
 
