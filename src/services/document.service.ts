@@ -21,6 +21,23 @@ export function detectFileType(filename: string): SupportedFileType | null {
 }
 
 /**
+ * 文件内容魔数校验（A-5 安全硬化）：不能只信扩展名与浏览器 MIME。
+ * - PDF：必须以 %PDF- 开头
+ * - TXT：拒绝含 NUL 字节的二进制伪装
+ * 返回 null 表示通过，否则返回人类可读的拒绝原因。
+ */
+export function verifyFileMagic(buffer: Buffer, type: SupportedFileType): string | null {
+  if (type === 'pdf') {
+    const head = buffer.subarray(0, 5).toString('latin1');
+    return head === '%PDF-' ? null : '文件内容不是合法 PDF（缺少 %PDF- 魔数）';
+  }
+  if (buffer.includes(0)) {
+    return '文件内容疑似二进制数据，不是合法的文本文件';
+  }
+  return null;
+}
+
+/**
  * 解析上传文件为纯文本（A10.md 十二节 步骤 10-11）。
  * @param buffer 文件二进制内容
  * @param filename 文件名（用于判断 PDF/TXT）

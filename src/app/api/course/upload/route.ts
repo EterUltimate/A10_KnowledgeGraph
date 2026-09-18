@@ -8,8 +8,9 @@ import type { NextRequest } from 'next/server';
 import type { TextChunk, UploadResult } from '@/types';
 import { ok, fail } from '@/lib/http';
 import { requireTeacher } from '@/lib/auth-guard';
+import { checkRateLimit, clientIp } from '@/lib/rate-limit';
 import { config, isLLMConfigured } from '@/lib/config';
-import { detectFileType, parseFile, cleanText, buildChunks } from '@/services/document.service';
+import { detectFileType, parseFile, verifyFileMagic, cleanText, buildChunks } from '@/services/document.service';
 import { extractKnowledge } from '@/lib/ai/extract-knowledge';
 import { extractRelations } from '@/lib/ai/extract-relations';
 import { buildGraph } from '@/services/graph.service';
@@ -24,6 +25,14 @@ export async function POST(request: NextRequest) {
   if (guard) return guard;
 
   const t0 = Date.now();
+
+  // 限流（A-5）：上传为重操作，单 IP 每分钟最多 5 次
+  const limit = checkRateLimit(`upload:${clientIp(request.headers)}`, { windowMs: 60_000, max: 5 });
+  if (!limit.ok) {
+    return fail(`上传过于频繁，请 ${limit.retryAfterSec} 秒后重试`, 429, {
+      'Retry-After': String(limit.retryAfterSec),
+    });
+  }
 
   let formData: FormData;
   try {
@@ -46,14 +55,23 @@ export async function POST(request: NextRequest) {
   if (file.size > config.upload.maxFileSize) {
     return fail(`文件过大（上限 ${Math.floor(config.upload.maxFileSize / 1024 / 1024)}MB）`);
   }
+  // MIME 提示性校验（A-5）：浏览器上报的类型明显不符时提前拒绝
+  if (file.type && !['application/pdf', 'text/plain'].includes(file.type)) {
+    return fail(`不支持的文件类型（MIME: ${file.type}），仅接受 PDF / TXT`);
+  }
+  // 魔数硬校验（A-5）：防止二进制伪装扩展名
+  const uploadBuffer = Buffer.from(await file.arrayBuffer());
+  const magicError = verifyFileMagic(uploadBuffer, fileType);
+  if (magicError) {
+    return fail(magicError);
+  }
 
   const demoMode = !isLLMConfigured();
 
   try {
     // 1. 解析文本（PDF/TXT）并清洗、切块
     const parseStart = Date.now();
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const rawText = await parseFile(buffer, file.name);
+    const rawText = await parseFile(uploadBuffer, file.name);
     const text = cleanText(rawText);
     let chunks: TextChunk[] = buildChunks(text, courseId, file.name);
     const parseMs = Date.now() - parseStart;
