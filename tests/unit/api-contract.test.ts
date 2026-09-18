@@ -239,7 +239,8 @@ describe('POST /api/qa（智能问答，离线模式）', () => {
 
 describe('GET /api/course/list', () => {
   it('正例：返回课程数组', async () => {
-    const res = await courseListGET(new NextRequest(BASE + '/api/course/list'));
+    // GET /api/course/list 无查询参数，handler 定义为 0 参（TS2554）
+    const res = await courseListGET();
     expect(res.status).toBe(200);
     const body = (await res.json()) as { data: unknown[] };
     expect(Array.isArray(body.data)).toBe(true);
