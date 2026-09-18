@@ -1,0 +1,81 @@
+# A10 知识图谱系统 · 一键起（app + Neo4j）
+# 使用：
+#   docker compose up -d --build        # 构建并后台启动
+#   docker compose logs -f app          # 查看应用日志
+#   docker compose down                 # 停止
+#   docker compose down -v              # 停止并清空数据卷（重置演示数据）
+# 打开 http://localhost:3000 ；Neo4j Browser http://localhost:7474（bolt://localhost:7687）
+#
+# 环境变量：复制 .env.example → .env，或全部保留默认（离线演示模式 + JSON 存储）。
+# 想接 Neo4j：GRAPH_STORE=neo4j（默认 auto，Neo4j 可用即启用，否则降级 JSON）。
+services:
+  neo4j:
+    image: neo4j:5-enterprise
+    container_name: a10-neo4j
+    ports:
+      - '7474:7474' # Browser UI
+      - '7687:7687' # Bolt
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-a10devpassword}
+      # 企业版需要接受协议；社区版可去掉 license 行并改用 image: neo4j:5
+      NEO4J_ACCEPT_LICENSE_AGREEMENT: 'yes'
+      NEO4J_server_memory_heap_max__size: 1G
+      NEO4J_initial_database_neo4j__default__creation__if__not__exists: 'true'
+    volumes:
+      - neo4j-data:/data
+      - neo4j-logs:/logs
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:7474 || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: a10-app
+    restart: unless-stopped
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    ports:
+      - '3000:3000'
+    environment:
+      # Neo4j（容器网络内直连 neo4j 服务）
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-a10devpassword}
+      GRAPH_STORE: ${GRAPH_STORE:-auto}
+      # LLM（可留空走离线演示模式；填入即切在线，代码零改动）
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.deepseek.com/v1}
+      LLM_MODEL: ${LLM_MODEL:-deepseek-chat}
+      # Auth.js（A-1）——生产必须替换为强随机值
+      AUTH_SECRET: ${AUTH_SECRET:-change-me-in-production-please-use-openssl-rand-base64-32}
+      DEMO_TEACHER_USER: ${DEMO_TEACHER_USER:-teacher}
+      DEMO_TEACHER_PASSWORD: ${DEMO_TEACHER_PASSWORD:-a10teacher}
+      DEMO_STUDENT_USER: ${DEMO_STUDENT_USER:-student}
+      DEMO_STUDENT_PASSWORD: ${DEMO_STUDENT_PASSWORD:-a10student}
+      # RAG 与运行参数
+      RAG_TOP_K: ${RAG_TOP_K:-4}
+      RAG_CHUNK_SIZE: ${RAG_CHUNK_SIZE:-800}
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-20971520}
+      # JSON 兜底/掌握状态数据目录（容器内路径，映射到下方 app-data 卷）
+      DATA_DIR: /data/store
+      MASTERY_STORE: ${MASTERY_STORE:-auto}
+      NODE_ENV: production
+    volumes:
+      - app-data:/data/store
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3000/api/health | grep -q status || exit 1']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  neo4j-data:
+  neo4j-logs:
+  app-data:
