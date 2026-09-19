@@ -54,7 +54,7 @@ export function KnowledgeChecklist({ courseId, mastered, onToggle }: KnowledgeCh
     <div className="space-y-3">
       <p className="text-sm text-gray-600">
         已掌握 <span className="font-semibold text-brand-700">{masteredCount}</span> / {points.length} 个知识点
-        <span className="ml-2 text-xs text-gray-400">勾选即保存，学习路径会实时更新</span>
+        <span className="ml-2 text-xs text-gray-500">勾选即保存，学习路径会实时更新</span>
       </p>
       {grouped.map(([chapter, list]) => (
         <div key={chapter}>
@@ -79,7 +79,7 @@ export function KnowledgeChecklist({ courseId, mastered, onToggle }: KnowledgeCh
                     onChange={(e) => onToggle(p.name, e.target.checked)}
                   />
                   {p.name}
-                  <span className="text-xs text-gray-400">难度{p.difficulty}</span>
+                  <span className="text-xs text-gray-600">难度{p.difficulty}</span>
                 </label>
               );
             })}

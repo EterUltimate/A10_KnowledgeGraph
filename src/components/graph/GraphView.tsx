@@ -8,18 +8,22 @@
 import ReactECharts from 'echarts-for-react';
 import type { GraphData } from '@/types';
 
-/** 三类关系的展示色（与中文边标签配套） */
+/**
+ * 三类关系的展示色（与中文边标签配套）。
+ * 相关灰取 #6b7280（对白底约 4.8:1），满足 WCAG 1.4.11 非文本对比度 ≥3:1；
+ * 边仍带中文标签，颜色非唯一区分手段（满足 1.4.1）。
+ */
 const EDGE_COLORS: Record<string, string> = {
   前置: '#e5484d',
   包含: '#4f6ef7',
-  相关: '#9ca3af',
+  相关: '#6b7280',
 };
 
 const LEGEND_HTML =
-  '<span style="font-size:12px;color:#6b7280">' +
+  '<span style="font-size:12px;color:#4b5563">' +
   '<span style="color:#e5484d">— 前置</span>　' +
   '<span style="color:#4f6ef7">— 包含</span>　' +
-  '<span style="color:#9ca3af">— 相关</span>　' +
+  '<span style="color:#6b7280">— 相关</span>　' +
   '节点越大难度越高，点击节点查看详情</span>';
 
 interface GraphViewProps {
@@ -83,13 +87,45 @@ export function GraphView({ data, onNodeClick }: GraphViewProps) {
     },
   };
 
+  const nodeCount = data.nodes.length;
+  const edgeCount = data.edges.length;
+  const summary = `知识图谱可视化，共 ${nodeCount} 个知识点、${edgeCount} 条关系（前置/包含/相关）。可缩放、拖拽，点击节点查看详情。`;
+
   return (
-    <ReactECharts
-      option={option}
-      onEvents={onEvents}
-      style={{ height: 480, width: '100%' }}
-      notMerge
-      aria-label="知识图谱可视化"
-    />
+    <div>
+      <div role="img" aria-label={summary}>
+        <ReactECharts
+          option={option}
+          onEvents={onEvents}
+          style={{ height: 480, width: '100%' }}
+          notMerge
+        />
+      </div>
+      {/* canvas 无文字替代，为读屏用户提供等价的节点/关系文本（视觉隐藏） */}
+      <div className="sr-only">
+        <p>
+          <strong>知识图谱数据（文字版）</strong>
+        </p>
+        <p>{summary}</p>
+        <p>知识点（{nodeCount}）：</p>
+        <ul>
+          {data.nodes.map((n) => (
+            <li key={n.id}>
+              {n.name}
+              {n.chapter ? `（章节：${n.chapter}）` : ''}
+              {typeof n.difficulty === 'number' ? `，难度 ${n.difficulty}/5` : ''}
+            </li>
+          ))}
+        </ul>
+        <p>关系（{edgeCount}）：</p>
+        <ul>
+          {data.edges.map((e, i) => (
+            <li key={`${e.source}-${e.target}-${i}`}>
+              {e.source} —{e.type}→ {e.target}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
   );
 }
