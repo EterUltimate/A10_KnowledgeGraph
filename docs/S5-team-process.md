@@ -1,7 +1,7 @@
 # S5：团队完成过程（How did we do）
 
 > **交付要求**：以 PPT 或视频等形式介绍团队完成任务的过程，展示成员在问题解决、创新、学习、文化、沟通、执行、管理等方面的意识与能力（不超过 5 分钟）。
-> **状态**：v1.0 交付候选正文，含真实 Git 提交历史与协作证据。团队成员信息待填。
+> **状态**：v1.0 交付候选正文，含真实 Git 提交历史与协作证据。团队：浙江师范大学 A10 参赛队 5 人（张晟林 需求分析 / 肖钰涛 架构设计 / 张旭业 编码实现 / 桑东杰 测试 / 周靖超 审计）。
 
 ## 展示维度（≤5 分钟 · 建议 8 页 PPT 或 5 分钟视频）
 
@@ -29,9 +29,9 @@
 ### ③ 学习（Learning）
 
 - **Vercel AI SDK v5 与 React 19 的 peer 冲突**：早期即遇到，通过精确锁定 `ai@^5.0.29` + `@ai-sdk/react@^2.0.29` + `react@^19.2.1` 三角版本兼容矩阵解决；经验沉淀至团队 memory。
-- **Next.js 15 App Router 全栈心智**：从传统前后端分离迁移到 RSC + Route Handler + Edge Middleware；学生 A/B 从 React/Express 背景转向 Next 全栈。
-- **Neo4j 与 Cypher**：学生 D 从零上手图数据库；发现"关系类型不能用参数 `$type` 传入"这一关键坑点，进而设计 `assertRelationType` 模式。
-- **Auth.js v5 (NextAuth) beta 集成**：学生 B 阅读源码理解 JWT 策略在 Edge vs Node 层的差异，实现双层守卫。
+- **Next.js 15 App Router 全栈心智**：从传统前后端分离迁移到 RSC + Route Handler + Edge Middleware；编码实现（张旭业）从 React/Express 背景转向 Next 全栈。
+- **Neo4j 与 Cypher**：张旭业（编码实现）从零上手图数据库；发现"关系类型不能用参数 `$type` 传入"这一关键坑点，进而设计 `assertRelationType` 模式。
+- **Auth.js v5 (NextAuth) beta 集成**：张旭业（编码实现）阅读源码理解 JWT 策略在 Edge vs Node 层的差异，实现双层守卫。
 - **Docker 多阶段构建 + Next standalone 输出**：镜像体积从 1.2GB 降到 <200MB。
 
 ### ④ 文化（Culture）
@@ -90,4 +90,4 @@
 
 | 部分 | 负责人 |
 | --- | --- |
-| S5 PPT/视频 | 待填姓名（建议项目经理统筹，全员供稿）|
+| S5 PPT/视频 | 张晟林（需求分析）统筹 · 全员供稿 |
