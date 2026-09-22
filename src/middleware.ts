@@ -15,6 +15,7 @@ const TEACHER_WRITE_API = [
   /^\/api\/knowledge(\/|$)/,
   /^\/api\/relation\/?$/,
   /^\/api\/course\/upload\/?$/,
+  /^\/api\/llm\/(config|models|test)\/?$/,
 ];
 const WRITE_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
 
@@ -70,5 +71,11 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ['/teacher/:path*', '/api/knowledge/:path*', '/api/relation', '/api/course/upload'],
+  matcher: [
+    '/teacher/:path*',
+    '/api/knowledge/:path*',
+    '/api/relation',
+    '/api/course/upload',
+    '/api/llm/:path*',
+  ],
 };

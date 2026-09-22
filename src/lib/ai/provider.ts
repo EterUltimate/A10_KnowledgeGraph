@@ -1,17 +1,25 @@
 /**
- * LLM Provider（Vercel AI SDK + OpenAI 兼容接口）
- * 对应 A10.md 八、九节：统一采用 OpenAI 兼容接口对接 DeepSeek / Qwen 等。
+ * LLM Provider 工厂（Vercel AI SDK v5）。
+ * 按生效配置（运行时覆盖 > .env）动态构建模型实例，支持四种协议格式：
+ * OpenAI 兼容 / OpenAI Chat / OpenAI Responses / Anthropic / Gemini。
  * 未配置 Key 时 isLLMConfigured() 返回 false，上层模块自动走离线演示模式。
  */
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { createOpenAI } from '@ai-sdk/openai';
+import { createAnthropic } from '@ai-sdk/anthropic';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateText, type LanguageModel } from 'ai';
-import { config, isLLMConfigured } from '@/lib/config';
+import {
+  getEffectiveLLMConfig,
+  isLLMConfigured,
+  type LLMConfig,
+} from '@/lib/ai/llm-config';
 
 /**
  * LLM Base URL SSRF 防护（A-5）：
  * - 必须为合法 URL 且默认要求 https（本地调试可用 LLM_ALLOW_INSECURE_BASEURL=1 放开 http）
  * - 拒绝指向内网/本机回环的地址（可用 LLM_ALLOW_LOCAL_LLM=1 放开，用于 Ollama 等本地推理）
- * 返回 null 表示通过，否则返回拒绝原因（供 provider 初始化时快速失败）。
+ * 返回 null 表示通过，否则返回拒绝原因。
  */
 export function assertLLMBaseURLSafe(baseURL: string): string | null {
   let url: URL;
@@ -31,39 +39,119 @@ export function assertLLMBaseURLSafe(baseURL: string): string | null {
   return null;
 }
 
-if (isLLMConfigured()) {
-  const unsafe = assertLLMBaseURLSafe(config.llm.baseURL);
-  if (unsafe) {
-    throw new Error(`[provider] ${unsafe}`);
+/** 按生效配置签名缓存模型实例，避免每次调用重建 provider */
+let cachedKey: string | null = null;
+let cachedModel: LanguageModel | null = null;
+
+/** 构建指定协议格式的 LanguageModel（不做缓存，供 getLLM 缓存包装） */
+function buildModel(cfg: LLMConfig): LanguageModel {
+  const unsafe = assertLLMBaseURLSafe(cfg.baseURL);
+  if (unsafe) throw new Error(`[provider] ${unsafe}`);
+  switch (cfg.kind) {
+    case 'openai-chat':
+      return createOpenAI({ baseURL: cfg.baseURL, apiKey: cfg.apiKey }).chat(cfg.model);
+    case 'openai-responses':
+      return createOpenAI({ baseURL: cfg.baseURL, apiKey: cfg.apiKey }).responses(cfg.model);
+    case 'anthropic':
+      return createAnthropic({ baseURL: cfg.baseURL, apiKey: cfg.apiKey })(cfg.model);
+    case 'gemini':
+      return createGoogleGenerativeAI({ baseURL: cfg.baseURL, apiKey: cfg.apiKey })(cfg.model);
+    case 'openai-compatible':
+    default:
+      return createOpenAICompatible({
+        name: 'a10-llm',
+        baseURL: cfg.baseURL,
+        apiKey: cfg.apiKey,
+      }).chatModel(cfg.model);
   }
 }
 
-/** 创建一个指向 OpenAI 兼容 Base URL 的 provider（例如 DeepSeek: https://api.deepseek.com/v1） */
-export const provider = createOpenAICompatible({
-  name: 'a10-llm',
-  baseURL: config.llm.baseURL,
-  apiKey: config.llm.apiKey,
-});
+/**
+ * 取当前生效配置的模型实例（用于 generateObject / generateText / streamText）。
+ * 运行时在调用点解析，使"设置页改配置"对后续请求立即生效。
+ */
+export function getLLM(): LanguageModel {
+  const cfg = getEffectiveLLMConfig();
+  const signature = `${cfg.kind}|${cfg.baseURL}|${cfg.apiKey}|${cfg.model}`;
+  if (!cachedModel || cachedKey !== signature) {
+    cachedModel = buildModel(cfg);
+    cachedKey = signature;
+  }
+  return cachedModel;
+}
 
-/** 默认对话模型实例（用于 generateObject / generateText / streamText） */
-export const llm: LanguageModel = provider.chatModel(config.llm.model);
+export { isLLMConfigured, getEffectiveLLMConfig };
 
-export { isLLMConfigured };
+export interface PingResult {
+  ok: boolean;
+  latencyMs: number;
+  reply?: string;
+  error?: string;
+}
 
 /**
- * Day1 连通性测试（A10.md 二十二节 测试3）：
- * 验证能否调用 LLM 并返回一句文本；失败返回 null 而不抛出，便于健康检查页面展示。
+ * 连通性测试（"hi"）：用生效配置（或显式传入的候选配置）发一句最小请求。
+ * 失败返回 { ok:false, error } 而不抛出，供设置页与健康检查展示。
  */
-export async function pingLLM(): Promise<string | null> {
-  if (!isLLMConfigured()) return null;
+export async function pingLLM(candidate?: LLMConfig): Promise<PingResult> {
+  const cfg = candidate ?? getEffectiveLLMConfig();
+  if (!cfg.apiKey.trim() || cfg.apiKey.trim() === 'your_api_key_here') {
+    return { ok: false, latencyMs: 0, error: '未配置 API Key（当前为离线演示模式）' };
+  }
+  const started = Date.now();
   try {
     const { text } = await generateText({
-      model: llm,
+      model: buildModel(cfg),
       prompt: '你好，请用一句话回复"连接正常"，不要输出其他内容。',
+      maxOutputTokens: 32,
     });
-    return text;
+    return { ok: true, latencyMs: Date.now() - started, reply: text };
   } catch (err) {
-    console.warn('[llm] pingLLM 失败：', err instanceof Error ? err.message : err);
+    return {
+      ok: false,
+      latencyMs: Date.now() - started,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
+/** 拉取指定协议端点的可用模型列表；失败返回 null（交由前端手动填写模型名） */
+export async function listModels(cfg: LLMConfig): Promise<string[] | null> {
+  const unsafe = assertLLMBaseURLSafe(cfg.baseURL);
+  if (unsafe) return null;
+  try {
+    const base = cfg.baseURL.replace(/\/+$/, '');
+    if (cfg.kind === 'gemini') {
+      const res = await fetch(`${base}/models?key=${encodeURIComponent(cfg.apiKey)}`, {
+        cache: 'no-store',
+      });
+      if (!res.ok) return null;
+      const data = (await res.json()) as { models?: { name?: string }[] };
+      return (data.models ?? [])
+        .map((m) => (m.name ?? '').replace(/^models\//, ''))
+        .filter(Boolean);
+    }
+    if (cfg.kind === 'anthropic') {
+      const res = await fetch(`${base}/v1/models`, {
+        headers: {
+          'x-api-key': cfg.apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        cache: 'no-store',
+      });
+      if (!res.ok) return null;
+      const data = (await res.json()) as { data?: { id?: string }[] };
+      return (data.data ?? []).map((m) => m.id ?? '').filter(Boolean);
+    }
+    // openai-compatible / openai-chat / openai-responses：标准 GET {baseURL}/models
+    const res = await fetch(`${base}/models`, {
+      headers: { Authorization: `Bearer ${cfg.apiKey}` },
+      cache: 'no-store',
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { data?: { id?: string }[] };
+    return (data.data ?? []).map((m) => m.id ?? '').filter(Boolean);
+  } catch {
     return null;
   }
 }
