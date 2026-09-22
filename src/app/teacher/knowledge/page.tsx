@@ -227,7 +227,7 @@ export default function TeacherKnowledgePage() {
             <li key={p.id} className="flex items-center justify-between gap-3 py-2">
               <div>
                 <span className="font-medium">{p.name}</span>
-                <span className="ml-2 text-xs text-gray-400">{p.chapter} · 难度 {p.difficulty}/5</span>
+                <span className="ml-2 text-xs text-gray-500">{p.chapter} · 难度 {p.difficulty}/5</span>
                 <p className="text-xs text-gray-600">{p.definition}</p>
               </div>
               <div className="flex shrink-0 gap-2">
