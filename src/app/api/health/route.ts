@@ -18,7 +18,7 @@ const PARSER_SAMPLE = Buffer.from('A10 健康检查解析样例：栈是限定�
 export async function GET(_request: NextRequest) {
   const startedAt = Date.now();
 
-  const [neo4jOk, llmReply] = await Promise.all([verifyConnectivity(), pingLLM()]);
+  const [neo4jOk, llmPing] = await Promise.all([verifyConnectivity(), pingLLM()]);
 
   let parserOk = false;
   let parserError: string | undefined;
@@ -43,8 +43,10 @@ export async function GET(_request: NextRequest) {
       graph: { neo4j: neo4jOk, mode: graphMode },
       llm: {
         configured: llmConfigured,
-        status: !llmConfigured ? 'skipped（离线演示模式）' : llmReply ? 'ok' : 'error',
-        reply: llmReply,
+        status: !llmConfigured ? 'skipped（离线演示模式）' : llmPing.ok ? 'ok' : 'error',
+        reply: llmPing.reply,
+        error: llmPing.ok ? undefined : llmPing.error,
+        latencyMs: llmPing.latencyMs,
       },
       parser: { ok: parserOk, error: parserError },
     },

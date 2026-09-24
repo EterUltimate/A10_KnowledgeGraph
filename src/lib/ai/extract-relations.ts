@@ -6,7 +6,7 @@
  */
 import { generateObject } from 'ai';
 import type { KnowledgePoint, Relation } from '@/types';
-import { llm, isLLMConfigured } from '@/lib/ai/provider';
+import { getLLM, isLLMConfigured } from '@/lib/ai/provider';
 import { relationExtractionSchema } from '@/lib/ai/schemas';
 import {
   RELATION_EXTRACTION_SYSTEM_PROMPT,
@@ -69,7 +69,7 @@ export async function extractRelations(points: KnowledgePoint[]): Promise<Relati
     const batch = briefs.slice(i, i + RELATION_BATCH_SIZE);
     try {
       const { object } = await generateObject({
-        model: llm,
+        model: getLLM(),
         schema: relationExtractionSchema,
         system: RELATION_EXTRACTION_SYSTEM_PROMPT,
         prompt: buildRelationExtractionUserPrompt(batch),

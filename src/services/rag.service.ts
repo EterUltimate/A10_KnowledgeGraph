@@ -7,8 +7,8 @@
 import path from 'path';
 import { generateText } from 'ai';
 import type { QAResponse, TextChunk } from '@/types';
-import { config, isLLMConfigured } from '@/lib/config';
-import { llm } from '@/lib/ai/provider';
+import { config } from '@/lib/config';
+import { getLLM, isLLMConfigured } from '@/lib/ai/provider';
 import { buildQASystemPrompt } from '@/lib/ai/prompts';
 import { readJsonFile, writeJsonFile } from '@/lib/db/json-file';
 
@@ -192,7 +192,7 @@ export async function answer(
 
   try {
     const { text } = await generateText({
-      model: llm,
+      model: getLLM(),
       system: buildQASystemPrompt(buildContext(chunks) || '（暂无检索到的教材内容）', courseName),
       prompt: question,
       temperature: 0.3,

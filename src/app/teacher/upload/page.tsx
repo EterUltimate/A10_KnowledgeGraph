@@ -2,12 +2,14 @@
  * 教师端 - 上传课程资料页（A10.md 十二节）
  */
 import { UploadPanel } from '@/components/upload/UploadPanel';
+import { Breadcrumb } from '@/components/ui/Breadcrumb';
 
 export const metadata = { title: '上传课程资料 · A10' };
 
 export default function TeacherUploadPage() {
   return (
     <div className="space-y-4">
+      <Breadcrumb items={[{ href: '/', label: '首页' }, { href: '/teacher/upload', label: '上传资料' }]} />
       <div>
         <h1 className="text-xl font-semibold">上传课程资料</h1>
         <p className="mt-1 text-sm text-gray-600">

@@ -5,7 +5,7 @@
  */
 import { generateObject } from 'ai';
 import type { KnowledgePoint } from '@/types';
-import { llm, isLLMConfigured } from '@/lib/ai/provider';
+import { getLLM, isLLMConfigured } from '@/lib/ai/provider';
 import { knowledgeExtractionSchema } from '@/lib/ai/schemas';
 import {
   KNOWLEDGE_EXTRACTION_SYSTEM_PROMPT,
@@ -32,7 +32,7 @@ async function extractChunk(
   courseId?: string,
 ): Promise<KnowledgePoint[]> {
   const { object } = await generateObject({
-    model: llm,
+    model: getLLM(),
     schema: knowledgeExtractionSchema,
     system: KNOWLEDGE_EXTRACTION_SYSTEM_PROMPT,
     prompt: buildKnowledgeExtractionUserPrompt(chunk.content, chunk.chapter),

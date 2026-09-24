@@ -63,7 +63,7 @@ export function ChatPanel({ courseId }: ChatPanelProps) {
                     className={`whitespace-pre-wrap rounded-lg px-3 py-2 text-sm ${
                       m.role === 'user'
                         ? 'ml-auto bg-brand-50 text-brand-700'
-                        : 'bg-surface-muted text-gray-800'
+                        : 'bg-surface-muted text-gray-800 dark:text-gray-200'
                     }`}
                     style={{ maxWidth: '80%', width: 'fit-content' }}
                   >

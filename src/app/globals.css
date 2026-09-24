@@ -2,14 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 设计 token（遵循 frontend-design 规范：语义化变量集中管理） */
+/* 设计 token（遵循 frontend-design 规范：语义化变量集中管理）。
+   颜色以 RGB 三元组存储，供 tailwind <alpha-value> 组合透明度；
+   .dark 仅覆盖变量值即完成主题切换，组件无需逐个加 dark: 变体。 */
 :root {
-  --color-bg: #f6f7fb;
-  --color-fg: #1f2430;
-  --color-muted: #6b7280;
-  --color-brand: #4f6ef7;
-  --color-border: #e5e7eb;
+  --brand-50: 238 244 255;
+  --brand-100: 219 230 254;
+  --brand-500: 79 110 247;
+  --brand-600: 59 85 224;
+  --brand-700: 49 67 184;
+
+  --surface: 255 255 255;
+  --surface-muted: 246 247 251;
+  --surface-border: 229 231 235;
+
+  --accent: 217 119 6; /* 强调色：琥珀，用于重点标注/强调 */
+  --accent-soft: 254 243 199;
+
+  --fg: 31 36 48;
+  --fg-muted: 107 114 128;
+
   --radius: 12px;
+  color-scheme: light;
+}
+
+.dark {
+  --brand-50: 30 40 78;
+  --brand-100: 40 53 100;
+  --brand-500: 116 139 250;
+  --brand-600: 129 150 250;
+  --brand-700: 160 176 251;
+
+  --surface: 24 26 34;
+  --surface-muted: 15 17 23;
+  --surface-border: 44 48 62;
+
+  --accent: 251 191 36;
+  --accent-soft: 66 51 14;
+
+  --fg: 226 229 236;
+  --fg-muted: 148 156 170;
+
+  color-scheme: dark;
 }
 
 * {
@@ -20,8 +54,8 @@ html,
 body {
   padding: 0;
   margin: 0;
-  background: var(--color-bg);
-  color: var(--color-fg);
+  background: rgb(var(--surface-muted));
+  color: rgb(var(--fg));
 }
 
 a {
@@ -29,7 +63,24 @@ a {
   text-decoration: none;
 }
 
-/* 通用卡片与按钮（tier1 基础样式，tier2 可换 shadcn/ui） */
+/* 强调文本（重点突出，配合 accent 强调色） */
+.text-accent {
+  color: rgb(var(--accent));
+}
+.mark-accent {
+  background: rgb(var(--accent-soft));
+  color: rgb(var(--accent));
+  border-radius: 6px;
+  padding: 0 4px;
+  font-weight: 600;
+}
+
+/* 可访问性：键盘聚焦统一强调色描边 */
+:focus-visible {
+  outline: 2px solid rgb(var(--accent));
+  outline-offset: 2px;
+}
+
 @layer components {
   .card {
     @apply rounded-xl border border-surface-border bg-surface p-5 shadow-sm;
@@ -41,12 +92,12 @@ a {
     @apply btn bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50;
   }
   .btn-ghost {
-    @apply btn border border-surface-border bg-surface text-gray-900 hover:bg-surface-muted;
+    @apply btn border border-surface-border bg-surface text-gray-700 hover:bg-surface-muted dark:text-gray-200;
   }
   .label {
-    @apply mb-1 block text-sm font-medium text-gray-700;
+    @apply mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300;
   }
   .input {
-    @apply w-full rounded-lg border border-surface-border px-3 py-2 text-sm outline-none focus:border-brand-500;
+    @apply w-full rounded-lg border border-surface-border bg-surface px-3 py-2 text-sm text-gray-900 outline-none focus:border-brand-500 dark:text-gray-100;
   }
 }

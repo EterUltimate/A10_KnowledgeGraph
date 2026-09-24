@@ -1,25 +1,31 @@
 import type { Config } from 'tailwindcss';
 
 const config: Config = {
+  darkMode: 'class',
   content: [
     './src/app/**/*.{ts,tsx}',
     './src/components/**/*.{ts,tsx}',
   ],
   theme: {
     extend: {
-      // 设计 token：遵循 frontend-design 规范，集中管理品牌色与语义色
+      // 设计 token：语义色集中管理，颜色指向 CSS 变量（<alpha-value> 支持透明度），
+      // 深/浅主题仅切换变量值，组件无需逐个加 dark: 变体。
       colors: {
         brand: {
-          50: '#eef4ff',
-          100: '#dbe6fe',
-          500: '#4f6ef7',
-          600: '#3b55e0',
-          700: '#3143b8',
+          50: 'rgb(var(--brand-50) / <alpha-value>)',
+          100: 'rgb(var(--brand-100) / <alpha-value>)',
+          500: 'rgb(var(--brand-500) / <alpha-value>)',
+          600: 'rgb(var(--brand-600) / <alpha-value>)',
+          700: 'rgb(var(--brand-700) / <alpha-value>)',
         },
         surface: {
-          DEFAULT: '#ffffff',
-          muted: '#f6f7fb',
-          border: '#e5e7eb',
+          DEFAULT: 'rgb(var(--surface) / <alpha-value>)',
+          muted: 'rgb(var(--surface-muted) / <alpha-value>)',
+          border: 'rgb(var(--surface-border) / <alpha-value>)',
+        },
+        accent: {
+          DEFAULT: 'rgb(var(--accent) / <alpha-value>)',
+          soft: 'rgb(var(--accent-soft) / <alpha-value>)',
         },
       },
       fontFamily: {

@@ -11,7 +11,7 @@ import {
   createUIMessageStreamResponse,
   type UIMessage,
 } from 'ai';
-import { llm, isLLMConfigured } from '@/lib/ai/provider';
+import { getLLM, isLLMConfigured } from '@/lib/ai/provider';
 import { buildQASystemPrompt } from '@/lib/ai/prompts';
 import { answer, buildContext, buildReferences, retrieve } from '@/services/rag.service';
 import { getCourse } from '@/services/course.service';
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
 
       if (isLLMConfigured()) {
         const result = streamText({
-          model: llm,
+          model: getLLM(),
           system: buildQASystemPrompt(
             buildContext(chunks) || '（暂无检索到的教材内容）',
             course?.name ?? '数据结构',
