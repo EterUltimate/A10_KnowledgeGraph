@@ -6,6 +6,7 @@
  * 安全：密钥只发服务端存储，界面仅回显掩码；「恢复默认」清除覆盖回退 .env。
  */
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useToast } from '@/components/ui/Toast';
 
 type ProviderKind =
   | 'openai-compatible'
@@ -47,6 +48,7 @@ interface TestResult {
 }
 
 export function LLMSettingsPanel() {
+  const toast = useToast();
   const [view, setView] = useState<ConfigView | null>(null);
   const [kind, setKind] = useState<ProviderKind>('openai-compatible');
   const [baseURL, setBaseURL] = useState(DEFAULT_BASE_URL['openai-compatible']);
@@ -152,7 +154,7 @@ export function LLMSettingsPanel() {
       if (json.success && json.data) {
         setView(json.data);
         setApiKey('');
-        setMessage({ type: 'ok', text: '已保存为运行时配置，立即生效（无需重启）' });
+        toast.success('已保存，配置立即生效');
       } else {
         setMessage({ type: 'err', text: json.error ?? '保存失败' });
       }
@@ -176,7 +178,7 @@ export function LLMSettingsPanel() {
         setModel(json.data.model);
         setApiKey('');
         setTestResult(null);
-        setMessage({ type: 'ok', text: '已恢复为 .env 默认配置' });
+        toast.info('已恢复为系统默认配置');
       }
     } finally {
       setLoading(false);

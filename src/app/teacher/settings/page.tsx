@@ -2,12 +2,14 @@
  * 教师端 - LLM 接入设置页：自定义协议格式 / Base URL / Key / 模型，「hi」测连通。
  */
 import { LLMSettingsPanel } from '@/components/settings/LLMSettingsPanel';
+import { Breadcrumb } from '@/components/ui/Breadcrumb';
 
 export const metadata = { title: '模型接入设置 · A10' };
 
 export default function TeacherSettingsPage() {
   return (
     <div className="space-y-4">
+      <Breadcrumb items={[{ href: '/', label: '首页' }, { href: '/teacher/settings', label: '模型接入设置' }]} />
       <div>
         <h1 className="text-xl font-semibold">模型接入设置</h1>
         <p className="mt-1 text-sm text-gray-600">

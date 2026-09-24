@@ -10,6 +10,7 @@ import { GraphView } from '@/components/graph/GraphView';
 import { KnowledgeDetail } from '@/components/knowledge/KnowledgeDetail';
 import { KnowledgeChecklist } from '@/components/knowledge/KnowledgeChecklist';
 import { CourseSelect } from '@/components/course/CourseSelect';
+import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import type { GraphData, KnowledgePoint, MasteryState } from '@/types';
 
 const STUDENT_ID = 'demo-student';
@@ -87,6 +88,7 @@ function StudentGraphContent() {
 
   return (
     <div className="space-y-4">
+      <Breadcrumb items={[{ href: '/', label: '首页' }, { href: '/student/graph', label: '知识图谱' }]} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold">知识图谱浏览</h1>

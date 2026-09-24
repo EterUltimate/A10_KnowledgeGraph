@@ -6,13 +6,14 @@
  */
 import { SessionProvider } from 'next-auth/react';
 import { ThemeProvider } from 'next-themes';
+import { ToastProvider } from '@/components/ui/Toast';
 import type { ReactNode } from 'react';
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <SessionProvider>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        {children}
+        <ToastProvider>{children}</ToastProvider>
       </ThemeProvider>
     </SessionProvider>
   );
