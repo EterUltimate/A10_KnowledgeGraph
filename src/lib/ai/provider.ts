@@ -149,7 +149,8 @@ export async function listModels(cfg: LLMConfig): Promise<string[] | null> {
     }
     // url 源自 cfg.baseURL，已在上游 assertLLMBaseURLSafe 强制 https 并拒绝内网/回环主机；
     // 模型列表端点本就是教师自助配置的外部 LLM 服务地址（预期能力），非未校验 SSRF。
-    const res = await fetch(url, { headers, cache: 'no-store' }); // codeql[js/request-forgery]
+    // codeql[js/request-forgery]
+    const res = await fetch(url, { headers, cache: 'no-store' });
     if (!res.ok) return null;
     const data = (await res.json()) as ListModelsResp;
     return parse(data);
