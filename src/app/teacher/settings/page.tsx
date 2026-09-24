@@ -12,7 +12,7 @@ export default function TeacherSettingsPage() {
         <h1 className="text-xl font-semibold">模型接入设置</h1>
         <p className="mt-1 text-sm text-gray-600">
           自助接入自定义大模型：选择协议格式（OpenAI 兼容 / Chat / Responses、Anthropic、Gemini），
-          填写 Base URL 与 API Key，「hi」一键测连通后立即启用。
+          填写接口地址与密钥，一键测连通后立即启用。
         </p>
       </div>
       <LLMSettingsPanel />

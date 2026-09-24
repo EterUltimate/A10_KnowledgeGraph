@@ -53,7 +53,7 @@ export function UploadPanel() {
             className="input"
             value={courseId}
             onChange={(e) => setCourseId(e.target.value)}
-            placeholder="data-structures"
+            placeholder="如 data-structures（英文小写+连字符）"
           />
         </div>
         <div>

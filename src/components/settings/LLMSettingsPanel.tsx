@@ -15,11 +15,11 @@ type ProviderKind =
   | 'gemini';
 
 const KIND_OPTIONS: { value: ProviderKind; label: string; hint: string }[] = [
-  { value: 'openai-compatible', label: 'OpenAI 兼容（DeepSeek/Qwen 等）', hint: 'POST /chat/completions，最通用' },
-  { value: 'openai-chat', label: 'OpenAI Chat', hint: 'POST /chat/completions（官方 api.openai.com）' },
-  { value: 'openai-responses', label: 'OpenAI Responses', hint: 'POST /responses（新格式）' },
-  { value: 'anthropic', label: 'Anthropic（Claude）', hint: 'POST /v1/messages' },
-  { value: 'gemini', label: 'Google Gemini', hint: ':generateContent' },
+  { value: 'openai-compatible', label: 'OpenAI 兼容（DeepSeek/Qwen 等）', hint: '兼容 OpenAI 聊天接口格式，最通用' },
+  { value: 'openai-chat', label: 'OpenAI Chat', hint: 'OpenAI 官方聊天接口格式' },
+  { value: 'openai-responses', label: 'OpenAI Responses', hint: 'OpenAI 新回复接口格式' },
+  { value: 'anthropic', label: 'Anthropic（Claude）', hint: 'Claude 消息接口格式' },
+  { value: 'gemini', label: 'Google Gemini', hint: '谷歌 Gemini 生成接口格式' },
 ];
 
 const DEFAULT_BASE_URL: Record<ProviderKind, string> = {
@@ -198,10 +198,10 @@ export function LLMSettingsPanel() {
               view.source === 'runtime' ? 'bg-brand-50 text-brand-700' : 'bg-surface-muted text-gray-600'
             }`}
           >
-            {view.source === 'runtime' ? '自定义（运行时）' : '默认（.env）'}
+            {view.source === 'runtime' ? '自定义（运行时）' : '系统默认'}
           </span>
           <span className={`rounded-full px-2 py-0.5 text-xs ${view.configured ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-            {view.configured ? '在线模式' : '离线演示模式'}
+            {view.configured ? '在线' : '离线演示'}
           </span>
         </div>
       )}
@@ -228,7 +228,7 @@ export function LLMSettingsPanel() {
         </div>
 
         <div>
-          <label htmlFor="llm-baseurl" className="label">Base URL</label>
+          <label htmlFor="llm-baseurl" className="label">接口地址</label>
           <input
             id="llm-baseurl"
             className="input"
@@ -240,7 +240,7 @@ export function LLMSettingsPanel() {
         </div>
 
         <div>
-          <label htmlFor="llm-apikey" className="label">API Key</label>
+          <label htmlFor="llm-apikey" className="label">密钥</label>
           <input
             id="llm-apikey"
             className="input"
@@ -248,7 +248,7 @@ export function LLMSettingsPanel() {
             autoComplete="new-password"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
-            placeholder={view?.maskedApiKey ? `留空沿用当前密钥（${view.maskedApiKey}）` : '输入你的 API Key'}
+            placeholder={view?.maskedApiKey ? `留空沿用当前密钥（${view.maskedApiKey}）` : '输入密钥'}
           />
           <p className="mt-1 text-xs text-gray-500">密钥仅存服务端，不回显明文；留空表示沿用现有密钥。</p>
         </div>
@@ -307,13 +307,13 @@ export function LLMSettingsPanel() {
 
         <div className="flex flex-wrap gap-2 pt-1">
           <button type="button" className="btn-ghost" onClick={handleTest} disabled={testing}>
-            {testing ? '测试中…' : '「hi」测连通'}
+            {testing ? '测试中…' : '一键测连通'}
           </button>
           <button type="submit" className="btn-primary" disabled={loading}>
-            {loading ? '保存中…' : '保存并启用'}
+            {loading ? '保存中…' : '保存启用'}
           </button>
           <button type="button" className="btn-ghost" onClick={handleReset} disabled={loading}>
-            恢复默认（.env）
+            恢复系统默认
           </button>
         </div>
       </form>
