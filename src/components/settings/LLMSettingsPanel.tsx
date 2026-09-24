@@ -319,7 +319,7 @@ export function LLMSettingsPanel() {
       </form>
 
       <div className="card text-sm text-gray-600">
-        <p className="font-medium text-gray-800">说明</p>
+        <p className="font-medium text-gray-800 dark:text-gray-200">说明</p>
         <ul className="mt-2 list-disc space-y-1 pl-5">
           <li>配置保存后立即对「上传建图 / 智能问答」等所有调用生效，无需重启。</li>
           <li>未配置有效 Key 时系统自动进入离线演示模式（内置《数据结构》数据集）。</li>

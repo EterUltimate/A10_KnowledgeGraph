@@ -13,6 +13,7 @@ const ENTRIES = [
     links: [
       { href: '/teacher/upload', label: '上传课程资料' },
       { href: '/teacher/knowledge', label: '知识点/关系管理' },
+      { href: '/teacher/settings', label: '模型接入设置' },
     ],
   },
   {
