@@ -18,7 +18,8 @@ export const KNOWLEDGE_EXTRACTION_SYSTEM_PROMPT = `你是课程知识图谱构�
 3. definition 用一句话概括，不超过 40 字。
 4. chapter 填写该知识点所在章节标题；若无法判断，填"未分类"。
 5. difficulty 根据概念的抽象程度与先修要求评估：1=入门，5=很难。
-6. 单次输入至少抽取 5 个知识点（若文本确实不足则按实际数量）。`;
+6. 单次输入至少抽取 5 个知识点（若文本确实不足则按实际数量）。
+7. 输出必须是**一个 JSON 对象**，顶层形如 {"knowledge": [ {"name": "...", "definition": "...", "chapter": "...", "difficulty": 3} ]}：knowledge 为知识点数组，difficulty 为 1-5 的整数（数字，不要加引号）。不要输出裸数组，不要输出 JSON 之外的任何解释、前后缀或 Markdown 代码块标记。`;
 
 /** 关系抽取 system prompt（A10.md 十一节，只允许三类关系） */
 export const RELATION_EXTRACTION_SYSTEM_PROMPT = `你是课程知识图谱关系抽取助手。
@@ -30,7 +31,8 @@ export const RELATION_EXTRACTION_SYSTEM_PROMPT = `你是课程知识图谱关系
 1. source 与 target 必须从给定知识点列表中选取，逐字使用其名称，不得编造或改写。
 2. 方向要正确：PREREQUISITE 是"先修 → 后学"；CONTAINS 是"整体 → 局部"。
 3. 不要输出规定之外的关系类型；不确定的关系宁可标为 RELATED 或省略。
-4. 尽量全面：同一对知识点可以同时有 CONTAINS 与 RELATED 之外的多重关系时只保留最有语义的一条。`;
+4. 尽量全面：同一对知识点可以同时有 CONTAINS 与 RELATED 之外的多重关系时只保留最有语义的一条。
+5. 输出必须是**一个 JSON 对象**，顶层形如 {"relations": [ {"source": "...", "target": "...", "type": "PREREQUISITE"} ]}：type 只能是 PREREQUISITE / CONTAINS / RELATED 三者之一。不要输出裸数组，不要输出 JSON 之外的任何解释、前后缀或 Markdown 代码块标记。`;
 
 /**
  * RAG 问答 system prompt（A10.md 十五节）

@@ -29,7 +29,7 @@ export function PathList({ data, onMarkMastered }: PathListProps) {
                 {index + 1}
               </span>
               {knowledge.name}
-              <span className="ml-2 text-xs text-gray-400">{knowledge.chapter} · 难度 {knowledge.difficulty}/5</span>
+              <span className="ml-2 text-xs text-gray-500">{knowledge.chapter} · 难度 {knowledge.difficulty}/5</span>
             </p>
             <p className="mt-1 text-sm text-gray-500">{reason}</p>
             <p className="mt-1 text-xs text-gray-600">{knowledge.definition}</p>

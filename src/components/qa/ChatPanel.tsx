@@ -98,8 +98,8 @@ export function ChatPanel({ courseId }: ChatPanelProps) {
             })}
           </div>
         ))}
-        {status === 'streaming' && <p className="text-xs text-gray-400">AI 正在回答…</p>}
-        {status === 'submitted' && <p className="text-xs text-gray-400">正在检索教材…</p>}
+        {status === 'streaming' && <p className="text-xs text-gray-500">AI 正在回答…</p>}
+        {status === 'submitted' && <p className="text-xs text-gray-500">正在检索教材…</p>}
         {error && <p className="text-xs text-red-600">出错了：{error.message}</p>}
       </div>
 

@@ -39,7 +39,11 @@ export default function HomePage() {
           {FLOW.map((step, i) => (
             <li key={step} className="flex items-center gap-2">
               <span className="rounded-full bg-brand-50 px-3 py-1 text-brand-700">{step}</span>
-              {i < FLOW.length - 1 && <span className="text-gray-400">→</span>}
+              {i < FLOW.length - 1 && (
+                <span className="text-gray-400" aria-hidden="true">
+                  →
+                </span>
+              )}
             </li>
           ))}
         </ol>
@@ -61,7 +65,7 @@ export default function HomePage() {
         ))}
       </section>
 
-      <p className="text-center text-xs text-gray-400">
+      <p className="text-center text-xs text-gray-500">
         支持多课程管理 · PDF/TXT 上传 · 离线演示模式（无需 API Key）· 图存储可切换 Neo4j / 内置 JSON 存储
       </p>
     </div>

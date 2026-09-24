@@ -85,10 +85,18 @@ export function UploadPanel() {
         {loading ? '正在解析并生成知识图谱…（最长约 60 秒）' : '上传并生成知识图谱'}
       </button>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
 
       {result && (
-        <div className="space-y-2 rounded-lg border border-brand-200 bg-brand-50/40 p-4 text-sm text-gray-700">
+        <div
+          role="status"
+          aria-live="polite"
+          className="space-y-2 rounded-lg border border-brand-200 bg-brand-50/40 p-4 text-sm text-gray-700"
+        >
           <p className="font-medium text-brand-700">知识图谱生成完成 ✓</p>
           <ul className="space-y-1">
             <li>课程：{result.courseName ?? result.courseId}（{result.courseId}）</li>

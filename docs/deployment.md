@@ -50,6 +50,40 @@ docker compose down        # 停止（保留数据卷）
 docker compose down -v     # 停止并删除数据卷（重置全部课程/图谱/掌握状态/RAG 语料）
 ```
 
+### D-1 真机验收状态（2026-09-20，诚实记录）
+
+> 本节记录在本机对方案 A 的真实执行情况，未虚构任何容器运行结果。
+
+**已完成（无需 Docker 引擎的静态校验）**
+
+- `docker compose config --quiet` 退出码 0 → `docker-compose.yml` 语法/插值校验通过。
+- `Dockerfile`、`docker-compose.yml` 均在仓库根，CI 的 `release.yml` 已能构建并推送镜像至 GHCR（见第十一节）。
+
+**未完成（引擎起容器验收，被环境阻塞）**
+
+本机 Docker Desktop 引擎无法启动，`docker info` 报 `npipe:////./pipe/dockerDesktopLinuxEngine` 不存在。根因经实测确认：
+
+```
+$ wsl -d Ubuntu echo wsl-ok
+WSL2 无法启动，因为此计算机上未启用虚拟化。
+错误代码: Wsl/Service/CreateInstance/CreateVm/HCS/HCS_E_HYPERV_NOT_INSTALLED
+```
+
+诊断细节：CPU 固件虚拟化已开启（`Win32_Processor.VirtualizationFirmwareEnabled=True`、`VMMonitorModeExtensions=True`），但 Windows「虚拟机平台」可选组件未启用，导致 `Win32_ComputerSystem.HypervisorPresent=False`，WSL2 / Docker Desktop（WSL2 后端）均无法创建虚拟机。
+
+**修复路径（需管理员 + 重启，属人工作业）**
+
+1. 以管理员身份启用虚拟机平台：`wsl.exe --install --no-distribution`（或 DISM 启用 `VirtualMachinePlatform` + `Microsoft-Windows-Subsystem-Linux`）。
+2. **重启电脑**使 hypervisor 生效（确认 `HypervisorPresent=True`）。
+3. 启动 Docker Desktop，待引擎就绪后执行真机验收：
+
+```bash
+docker compose up -d --build
+curl http://localhost:3000/api/health   # 期望：graph.neo4j=true（真连 Neo4j 容器）、parser.ok=true
+```
+
+4. 验收通过后，把上述命令的**真实输出摘要 + 时间**回填本节，替换「未完成」状态。
+
 ## 三、方案 B：单容器（外置 Neo4j）
 
 ```bash
