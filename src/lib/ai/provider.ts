@@ -115,42 +115,44 @@ export async function pingLLM(candidate?: LLMConfig): Promise<PingResult> {
   }
 }
 
+/** 去除 URL 末尾的 '/'：用循环而非正则，避免用户可控输入触发 CodeQL ReDoS 告警。 */
+function trimTrailingSlashes(s: string): string {
+  let end = s.length;
+  while (end > 0 && s[end - 1] === '/') end -= 1;
+  return s.slice(0, end);
+}
+
+type ListModelsResp = { models?: { name?: string }[]; data?: { id?: string }[] };
+
 /** 拉取指定协议端点的可用模型列表；失败返回 null（交由前端手动填写模型名） */
 export async function listModels(cfg: LLMConfig): Promise<string[] | null> {
+  // 先做 SSRF 防护：强制 https 且拒绝内网/回环主机；不通过则不发任何请求。
   const unsafe = assertLLMBaseURLSafe(cfg.baseURL);
   if (unsafe) return null;
   try {
-    const base = cfg.baseURL.replace(/\/+$/, '');
+    const base = trimTrailingSlashes(cfg.baseURL);
+    let url: string;
+    let headers: Record<string, string> = {};
+    let parse: (d: ListModelsResp) => string[];
     if (cfg.kind === 'gemini') {
-      const res = await fetch(`${base}/models?key=${encodeURIComponent(cfg.apiKey)}`, {
-        cache: 'no-store',
-      });
-      if (!res.ok) return null;
-      const data = (await res.json()) as { models?: { name?: string }[] };
-      return (data.models ?? [])
-        .map((m) => (m.name ?? '').replace(/^models\//, ''))
-        .filter(Boolean);
+      url = `${base}/models?key=${encodeURIComponent(cfg.apiKey)}`;
+      parse = (d) => (d.models ?? []).map((m) => (m.name ?? '').replace(/^models\//, '')).filter(Boolean);
+    } else if (cfg.kind === 'anthropic') {
+      url = `${base}/v1/models`;
+      headers = { 'x-api-key': cfg.apiKey, 'anthropic-version': '2023-06-01' };
+      parse = (d) => (d.data ?? []).map((m) => m.id ?? '').filter(Boolean);
+    } else {
+      // openai-compatible / openai-chat / openai-responses：标准 GET {baseURL}/models
+      url = `${base}/models`;
+      headers = { Authorization: `Bearer ${cfg.apiKey}` };
+      parse = (d) => (d.data ?? []).map((m) => m.id ?? '').filter(Boolean);
     }
-    if (cfg.kind === 'anthropic') {
-      const res = await fetch(`${base}/v1/models`, {
-        headers: {
-          'x-api-key': cfg.apiKey,
-          'anthropic-version': '2023-06-01',
-        },
-        cache: 'no-store',
-      });
-      if (!res.ok) return null;
-      const data = (await res.json()) as { data?: { id?: string }[] };
-      return (data.data ?? []).map((m) => m.id ?? '').filter(Boolean);
-    }
-    // openai-compatible / openai-chat / openai-responses：标准 GET {baseURL}/models
-    const res = await fetch(`${base}/models`, {
-      headers: { Authorization: `Bearer ${cfg.apiKey}` },
-      cache: 'no-store',
-    });
+    // url 源自 cfg.baseURL，已在上游 assertLLMBaseURLSafe 强制 https 并拒绝内网/回环主机；
+    // 模型列表端点本就是教师自助配置的外部 LLM 服务地址（预期能力），非未校验 SSRF。
+    const res = await fetch(url, { headers, cache: 'no-store' }); // codeql[js/request-forgery]
     if (!res.ok) return null;
-    const data = (await res.json()) as { data?: { id?: string }[] };
-    return (data.data ?? []).map((m) => m.id ?? '').filter(Boolean);
+    const data = (await res.json()) as ListModelsResp;
+    return parse(data);
   } catch {
     return null;
   }
