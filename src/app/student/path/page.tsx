@@ -10,6 +10,7 @@ import { useSearchParams } from 'next/navigation';
 import { KnowledgeChecklist } from '@/components/knowledge/KnowledgeChecklist';
 import { PathList } from '@/components/path/PathList';
 import { CourseSelect } from '@/components/course/CourseSelect';
+import { PageHeader } from '@/components/ui/PageHeader';
 import type { MasteryState, PathRecommendation } from '@/types';
 
 const STUDENT_ID = 'demo-student';
@@ -17,7 +18,7 @@ const DEFAULT_COURSE = 'data-structures';
 
 export default function StudentPathPage() {
   return (
-    <Suspense fallback={<p className="text-sm text-gray-500">加载中…</p>}>
+    <Suspense fallback={<p className="text-sm text-fg-muted">加载中…</p>}>
       <StudentPathContent />
     </Suspense>
   );
@@ -26,9 +27,7 @@ export default function StudentPathPage() {
 function StudentPathContent() {
   const searchParams = useSearchParams();
   // 直接从 URL 初始化课程（支持 ?courseId= 直达指定课程），避免 effect 中同步 setState
-  const [courseId, setCourseId] = useState(
-    () => searchParams.get('courseId') ?? DEFAULT_COURSE,
-  );
+  const [courseId, setCourseId] = useState(() => searchParams.get('courseId') ?? DEFAULT_COURSE);
   const [mastered, setMastered] = useState<string[]>([]);
   const [path, setPath] = useState<PathRecommendation>({
     studentId: STUDENT_ID,
@@ -73,22 +72,27 @@ function StudentPathContent() {
   );
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold">学习路径推荐</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            勾选已掌握的知识点，系统基于「前置关系」图遍历，按解锁价值 / 难度 / 章节顺序推荐下一步学习内容。
-          </p>
-        </div>
-        <CourseSelect value={courseId} onChange={setCourseId} />
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        eyebrow="Student · Path"
+        title="学习路径推荐"
+        description="勾选已掌握的知识点，系统基于「前置关系」图遍历，按解锁价值 / 难度 / 章节顺序推荐下一步学习内容。"
+        accent="amber"
+        actions={<CourseSelect value={courseId} onChange={setCourseId} />}
+      />
 
       <PathList data={path} onMarkMastered={(name) => void toggleMastered(name, true)} />
 
-      <div className="card">
-        <h2 className="mb-3 font-semibold">已掌握知识点管理</h2>
-        <KnowledgeChecklist courseId={courseId} mastered={mastered} onToggle={(name, checked) => void toggleMastered(name, checked)} />
+      <div className="card !p-6">
+        <h2 className="mb-3 flex items-center gap-2 font-semibold tracking-tight">
+          <span aria-hidden="true" className="h-3.5 w-[3px] rounded-full bg-acc-green" />
+          已掌握知识点管理
+        </h2>
+        <KnowledgeChecklist
+          courseId={courseId}
+          mastered={mastered}
+          onToggle={(name, checked) => void toggleMastered(name, checked)}
+        />
       </div>
     </div>
   );

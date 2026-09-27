@@ -3,19 +3,25 @@
  */
 import { UploadPanel } from '@/components/upload/UploadPanel';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { PageHeader } from '@/components/ui/PageHeader';
 
-export const metadata = { title: '上传课程资料 · A10' };
+export const metadata = { title: '上传课程资料' };
 
 export default function TeacherUploadPage() {
   return (
-    <div className="space-y-4">
-      <Breadcrumb items={[{ href: '/', label: '首页' }, { href: '/teacher/upload', label: '上传资料' }]} />
-      <div>
-        <h1 className="text-xl font-semibold">上传课程资料</h1>
-        <p className="mt-1 text-sm text-gray-600">
-          上传《数据结构》教材（PDF/TXT），系统将自动解析、抽取知识点与关系并生成知识图谱。
-        </p>
-      </div>
+    <div className="space-y-5">
+      <Breadcrumb
+        items={[
+          { href: '/', label: '首页' },
+          { href: '/teacher/upload', label: '上传资料' },
+        ]}
+      />
+      <PageHeader
+        eyebrow="Teacher · Upload"
+        title="上传课程资料"
+        description="上传《数据结构》教材（PDF/TXT），系统将自动解析、抽取知识点与关系并生成知识图谱。"
+        accent="blue"
+      />
       <UploadPanel />
     </div>
   );

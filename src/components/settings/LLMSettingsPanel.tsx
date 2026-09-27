@@ -9,14 +9,14 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useToast } from '@/components/ui/Toast';
 
 type ProviderKind =
-  | 'openai-compatible'
-  | 'openai-chat'
-  | 'openai-responses'
-  | 'anthropic'
-  | 'gemini';
+  'openai-compatible' | 'openai-chat' | 'openai-responses' | 'anthropic' | 'gemini';
 
 const KIND_OPTIONS: { value: ProviderKind; label: string; hint: string }[] = [
-  { value: 'openai-compatible', label: 'OpenAI 兼容（DeepSeek/Qwen 等）', hint: '兼容 OpenAI 聊天接口格式，最通用' },
+  {
+    value: 'openai-compatible',
+    label: 'OpenAI 兼容（DeepSeek/Qwen 等）',
+    hint: '兼容 OpenAI 聊天接口格式，最通用',
+  },
   { value: 'openai-chat', label: 'OpenAI Chat', hint: 'OpenAI 官方聊天接口格式' },
   { value: 'openai-responses', label: 'OpenAI Responses', hint: 'OpenAI 新回复接口格式' },
   { value: 'anthropic', label: 'Anthropic（Claude）', hint: 'Claude 消息接口格式' },
@@ -128,7 +128,10 @@ export function LLMSettingsPanel() {
       if (json.success && json.data) {
         if (json.data.models && json.data.models.length > 0) {
           setModelOptions(json.data.models);
-          setMessage({ type: 'ok', text: `已获取 ${json.data.models.length} 个可用模型，可在下拉中选择` });
+          setMessage({
+            type: 'ok',
+            text: `已获取 ${json.data.models.length} 个可用模型，可在下拉中选择`,
+          });
         } else {
           setModelOptions(null);
           setMessage({ type: 'err', text: json.data.note ?? '端点未返回模型列表，请手动填写' });
@@ -191,29 +194,47 @@ export function LLMSettingsPanel() {
   return (
     <div className="space-y-5">
       {view && (
-        <div className="card flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-          <span className="font-medium">当前生效配置</span>
-          <span className="text-gray-600">
+        <div className="card flex flex-wrap items-center gap-x-6 gap-y-2 text-sm !p-5">
+          <span className="flex items-center gap-2 font-medium">
+            <span aria-hidden="true" className="h-3.5 w-[3px] rounded-full bg-acc-amber" />
+            当前生效配置
+          </span>
+          <span className="text-fg-muted">
             格式：{KIND_OPTIONS.find((k) => k.value === view.kind)?.label ?? view.kind}
           </span>
-          <span className="text-gray-600">模型：{view.model || '—'}</span>
-          <span className="text-gray-600">密钥：{view.maskedApiKey || '未配置'}</span>
+          <span className="text-fg-muted">
+            模型：<span className="font-mono text-xs text-fg">{view.model || '—'}</span>
+          </span>
+          <span className="text-fg-muted">
+            密钥：<span className="font-mono text-xs text-fg">{view.maskedApiKey || '未配置'}</span>
+          </span>
           <span
             className={`rounded-full px-2 py-0.5 text-xs ${
-              view.source === 'runtime' ? 'bg-brand-50 text-brand-700' : 'bg-surface-muted text-gray-600'
+              view.source === 'runtime'
+                ? 'bg-acc-blue-soft font-medium text-acc-blue'
+                : 'bg-surface-hover text-fg-muted'
             }`}
           >
             {view.source === 'runtime' ? '自定义（运行时）' : '系统默认'}
           </span>
-          <span className={`rounded-full px-2 py-0.5 text-xs ${view.configured ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs ${
+              view.configured
+                ? 'bg-acc-green-soft font-medium text-acc-green'
+                : 'bg-acc-amber-soft font-medium text-acc-amber'
+            }`}
+          >
+            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />
             {view.configured ? '在线' : '离线演示'}
           </span>
         </div>
       )}
 
-      <form onSubmit={handleSave} className="card space-y-4">
+      <form onSubmit={handleSave} className="card space-y-4 !p-6">
         <div>
-          <label htmlFor="llm-kind" className="label">协议格式</label>
+          <label htmlFor="llm-kind" className="label">
+            协议格式
+          </label>
           <select
             id="llm-kind"
             className="input"
@@ -226,14 +247,20 @@ export function LLMSettingsPanel() {
             }}
           >
             {KIND_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
             ))}
           </select>
-          <p className="mt-1 text-xs text-gray-500">{KIND_OPTIONS.find((k) => k.value === kind)?.hint}</p>
+          <p className="mt-1 text-xs text-fg-subtle">
+            {KIND_OPTIONS.find((k) => k.value === kind)?.hint}
+          </p>
         </div>
 
         <div>
-          <label htmlFor="llm-baseurl" className="label">接口地址</label>
+          <label htmlFor="llm-baseurl" className="label">
+            接口地址
+          </label>
           <input
             id="llm-baseurl"
             className="input"
@@ -245,7 +272,9 @@ export function LLMSettingsPanel() {
         </div>
 
         <div>
-          <label htmlFor="llm-apikey" className="label">密钥</label>
+          <label htmlFor="llm-apikey" className="label">
+            密钥
+          </label>
           <input
             id="llm-apikey"
             className="input"
@@ -253,24 +282,35 @@ export function LLMSettingsPanel() {
             autoComplete="new-password"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
-            placeholder={view?.maskedApiKey ? `留空沿用当前密钥（${view.maskedApiKey}）` : '输入密钥'}
+            placeholder={
+              view?.maskedApiKey ? `留空沿用当前密钥（${view.maskedApiKey}）` : '输入密钥'
+            }
           />
-          <p className="mt-1 text-xs text-gray-500">密钥仅存服务端，不回显明文；留空表示沿用现有密钥。</p>
+          <p className="mt-1 text-xs text-fg-subtle">
+            密钥仅存服务端，不回显明文；留空表示沿用现有密钥。
+          </p>
         </div>
 
         <div>
-          <label htmlFor="llm-model" className="label">模型名</label>
+          <label htmlFor="llm-model" className="label">
+            模型名
+          </label>
           <div className="flex gap-2">
             <input
               id="llm-model"
-              className="input flex-1"
+              className="input flex-1 font-mono"
               value={model}
               onChange={(e) => setModel(e.target.value)}
               placeholder="deepseek-chat"
               list="llm-model-options"
               required
             />
-            <button type="button" className="btn-ghost" onClick={handleListModels} disabled={listing}>
+            <button
+              type="button"
+              className="btn btn-ghost shrink-0"
+              onClick={handleListModels}
+              disabled={listing}
+            >
               {listing ? '获取中…' : '获取模型'}
             </button>
           </div>
@@ -286,10 +326,10 @@ export function LLMSettingsPanel() {
         {message && (
           <div
             role="alert"
-            className={`rounded-lg border px-3 py-2 text-sm ${
+            className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
               message.type === 'ok'
-                ? 'border-green-300 bg-green-50 text-green-700'
-                : 'border-red-300 bg-red-50 text-red-700'
+                ? 'border-line bg-acc-green-soft text-fg'
+                : 'border-line bg-acc-red-soft text-fg'
             }`}
           >
             {message.text}
@@ -298,33 +338,42 @@ export function LLMSettingsPanel() {
 
         {testResult && (
           <div
-            className={`rounded-lg border px-3 py-2 text-sm ${
-              testResult.ok ? 'border-green-300 bg-green-50 text-green-700' : 'border-red-300 bg-red-50 text-red-700'
+            className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+              testResult.ok
+                ? 'border-line bg-acc-green-soft text-fg'
+                : 'border-line bg-acc-red-soft text-fg'
             }`}
           >
             {testResult.ok ? (
-              <>连通正常 · {testResult.latencyMs}ms{testResult.reply ? ` · 回复：${testResult.reply}` : ''}</>
+              <>
+                <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-acc-green" />
+                连通正常 · <span className="font-mono text-xs">{testResult.latencyMs}ms</span>
+                {testResult.reply ? ` · 回复：${testResult.reply}` : ''}
+              </>
             ) : (
-              <>连接失败 · {testResult.error}</>
+              <>
+                <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-acc-red" />
+                连接失败 · {testResult.error}
+              </>
             )}
           </div>
         )}
 
         <div className="flex flex-wrap gap-2 pt-1">
-          <button type="button" className="btn-ghost" onClick={handleTest} disabled={testing}>
+          <button type="button" className="btn btn-ghost" onClick={handleTest} disabled={testing}>
             {testing ? '测试中…' : '一键测连通'}
           </button>
-          <button type="submit" className="btn-primary" disabled={loading}>
+          <button type="submit" className="btn btn-primary" disabled={loading}>
             {loading ? '保存中…' : '保存启用'}
           </button>
-          <button type="button" className="btn-ghost" onClick={handleReset} disabled={loading}>
+          <button type="button" className="btn btn-ghost" onClick={handleReset} disabled={loading}>
             恢复系统默认
           </button>
         </div>
       </form>
 
-      <div className="card text-sm text-gray-600">
-        <p className="font-medium text-gray-800 dark:text-gray-200">说明</p>
+      <div className="card text-sm leading-relaxed text-fg-muted">
+        <p className="font-medium text-fg">说明</p>
         <ul className="mt-2 list-disc space-y-1 pl-5">
           <li>配置保存后立即对「上传建图 / 智能问答」等所有调用生效，无需重启。</li>
           <li>未配置有效 Key 时系统自动进入离线演示模式（内置《数据结构》数据集）。</li>

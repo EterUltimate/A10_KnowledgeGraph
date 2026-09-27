@@ -2,7 +2,7 @@
 
 /**
  * 用户菜单：显示当前登录用户与角色，提供「模型设置」（仅教师）与「登出」。
- * 未登录时显示「登录」入口。
+ * 未登录时显示「登录」入口。下拉菜单弹簧展开，角色徽章蓝/紫语义区分。
  */
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -24,12 +24,14 @@ export function UserMenu() {
   }, []);
 
   if (status === 'loading') {
-    return <span className="h-9 w-20 animate-pulse rounded-lg bg-surface-muted" aria-hidden="true" />;
+    return (
+      <span className="h-9 w-20 animate-pulse rounded-lg bg-surface-hover" aria-hidden="true" />
+    );
   }
 
   if (!session?.user) {
     return (
-      <Link href="/login" className="btn-primary !px-3 !py-1.5 text-sm">
+      <Link href="/login" className="btn btn-primary !px-3 !py-1.5 text-sm">
         登录
       </Link>
     );
@@ -46,15 +48,17 @@ export function UserMenu() {
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="flex items-center gap-2 rounded-lg border border-surface-border bg-surface px-2 py-1.5 text-sm transition-colors hover:bg-surface-muted"
+        className="flex items-center gap-2 rounded-lg border border-line bg-surface px-2 py-1.5 text-sm transition-all duration-300 [transition-timing-function:var(--ease-spring)] hover:-translate-y-0.5 hover:border-line-strong"
       >
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-600 text-xs font-semibold text-white">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-acc-blue text-xs font-semibold text-white">
           {initial}
         </span>
         <span className="hidden max-w-[8rem] truncate sm:inline">{name}</span>
         <span
-          className={`rounded-full px-1.5 py-0.5 text-[10px] leading-none ${
-            role === 'teacher' ? 'bg-brand-50 text-brand-700' : 'bg-surface-muted text-gray-600'
+          className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none ${
+            role === 'teacher'
+              ? 'bg-acc-blue-soft text-acc-blue'
+              : 'bg-acc-violet-soft text-acc-violet'
           }`}
         >
           {role === 'teacher' ? '教师' : '学生'}
@@ -64,9 +68,10 @@ export function UserMenu() {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 z-20 mt-2 w-44 overflow-hidden rounded-xl border border-surface-border bg-surface shadow-lg"
+          className="absolute right-0 z-20 mt-2 w-48 overflow-hidden rounded-xl border border-line bg-surface shadow-lg"
+          style={{ animation: 'fade-up 240ms var(--ease-spring-soft)' }}
         >
-          <div className="border-b border-surface-border px-3 py-2 text-xs text-gray-500">
+          <div className="border-b border-line px-3 py-2 text-xs text-fg-subtle">
             {name} · {role === 'teacher' ? '教师' : '学生'}
           </div>
           {role === 'teacher' && (
@@ -74,7 +79,7 @@ export function UserMenu() {
               href="/teacher/settings"
               role="menuitem"
               onClick={() => setOpen(false)}
-              className="block px-3 py-2 text-sm text-gray-700 hover:bg-surface-muted"
+              className="block px-3 py-2 text-sm text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
             >
               模型接入设置
             </Link>
@@ -88,7 +93,7 @@ export function UserMenu() {
               router.push('/login');
               router.refresh();
             }}
-            className="block w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-surface-muted"
+            className="block w-full px-3 py-2 text-left text-sm text-acc-red transition-colors hover:bg-surface-hover"
           >
             登出
           </button>

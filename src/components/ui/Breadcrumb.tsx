@@ -1,5 +1,5 @@
 /**
- * 面包屑导航：显示当前页面层级位置。
+ * 面包屑导航：显示当前页面层级位置。等宽斜杠分隔，当前页加重。
  */
 import Link from 'next/link';
 
@@ -10,14 +10,23 @@ interface Crumb {
 
 export function Breadcrumb({ items }: { items: Crumb[] }) {
   return (
-    <nav aria-label="面包屑" className="mb-3 flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+    <nav
+      aria-label="面包屑"
+      className="mb-4 flex items-center gap-1.5 font-mono text-xs text-fg-subtle"
+    >
       {items.map((item, i) => (
-        <span key={item.href} className="flex items-center gap-1">
-          {i > 0 && <span aria-hidden="true">/</span>}
+        <span key={item.href} className="flex items-center gap-1.5">
+          {i > 0 && (
+            <span aria-hidden="true" className="select-none opacity-60">
+              /
+            </span>
+          )}
           {i === items.length - 1 ? (
-            <span className="font-medium text-gray-700 dark:text-gray-300">{item.label}</span>
+            <span className="font-medium text-fg">{item.label}</span>
           ) : (
-            <Link href={item.href} className="hover:text-brand-600">{item.label}</Link>
+            <Link href={item.href} className="transition-colors hover:text-acc-blue">
+              {item.label}
+            </Link>
           )}
         </span>
       ))}

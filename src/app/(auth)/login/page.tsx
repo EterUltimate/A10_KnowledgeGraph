@@ -2,10 +2,12 @@
 
 /**
  * 登录页（A-1）：使用 Auth.js v5 客户端 signIn（credentials），成功后跳转 callbackUrl 或教师工作台。
+ * Vercel 风格居中卡片：品牌标 + 玻璃卡片 + 演示账号 mono 提示。
  */
 import { Suspense, useState, type FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
+import { LogoMark } from '@/components/layout/Footer';
 
 function LoginForm() {
   const router = useRouter();
@@ -36,24 +38,33 @@ function LoginForm() {
   }
 
   return (
-    <div className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-4">
+    <div className="relative mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-4">
+      {/* 登录卡片后方的柔光 */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-72 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{ background: 'radial-gradient(closest-side, var(--glow), transparent)' }}
+      />
       <div className="mb-8 text-center">
-        <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-brand-600 text-sm font-bold text-white">A10</span>
-        <h1 className="mt-4 text-2xl font-bold">登录知识图谱系统</h1>
-        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+        <LogoMark className="mx-auto h-11 w-11" />
+        <h1 className="mt-4 text-2xl font-bold tracking-tight">登录知识图谱系统</h1>
+        <p className="mt-2 text-sm text-fg-muted">
           教师可管理课程与图谱，学生可浏览图谱、规划路径与智能问答。
         </p>
       </div>
 
       {forbidden && (
-        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-line bg-acc-amber-soft px-3 py-2 text-sm text-fg">
+          <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-acc-amber" />
           当前账号无教师权限，请使用教师账号登录。
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="card space-y-4">
+      <form onSubmit={handleSubmit} className="card space-y-4 !p-6">
         <div>
-          <label htmlFor="username" className="label">用户名</label>
+          <label htmlFor="username" className="label">
+            用户名
+          </label>
           <input
             id="username"
             name="username"
@@ -66,7 +77,9 @@ function LoginForm() {
           />
         </div>
         <div>
-          <label htmlFor="password" className="label">密码</label>
+          <label htmlFor="password" className="label">
+            密码
+          </label>
           <input
             id="password"
             name="password"
@@ -80,17 +93,25 @@ function LoginForm() {
         </div>
 
         {error && (
-          <div role="alert" className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-700 dark:bg-red-900/30 dark:text-red-200">
+          <div
+            role="alert"
+            className="flex items-center gap-2 rounded-lg border border-line bg-acc-red-soft px-3 py-2 text-sm text-fg"
+          >
+            <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-acc-red" />
             {error}
           </div>
         )}
 
-        <button type="submit" disabled={submitting} className="btn-primary w-full">
+        <button type="submit" disabled={submitting} className="btn btn-primary w-full !py-2.5">
           {submitting ? '登录中…' : '登录'}
         </button>
 
-        <div className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
-          演示账号：教师 <code className="mark-accent">teacher / teach123456</code>，学生 <code className="mark-accent">student / study123456</code>
+        <div className="rounded-lg border border-line bg-surface-muted px-3 py-2.5 text-xs leading-relaxed text-fg-muted">
+          演示账号：教师 <code className="kbd !text-[11px]">teacher / teach123456</code>
+          <br />
+          <span className="mt-1 block">
+            学生 <code className="kbd !text-[11px]">student / study123456</code>
+          </span>
         </div>
       </form>
     </div>
@@ -99,7 +120,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="mx-auto max-w-md px-4 py-12 text-gray-500">加载中…</div>}>
+    <Suspense fallback={<div className="mx-auto max-w-md px-4 py-12 text-fg-muted">加载中…</div>}>
       <LoginForm />
     </Suspense>
   );

@@ -2,6 +2,7 @@
  * 知识点掌握清单（tier2 新增）
  * 按章节分组展示全部知识点，勾选/取消即调用 onToggle；
  * 数据来自 GET /api/knowledge?courseId=，掌握状态由父组件持有并持久化到 /api/mastery。
+ * 视觉：章节 mono 眉标 + 可交互 chip（选中态 green 填充），悬浮微抬升。
  */
 'use client';
 
@@ -31,7 +32,8 @@ export function KnowledgeChecklist({ courseId, mastered, onToggle }: KnowledgeCh
     fetch(`/api/knowledge?courseId=${encodeURIComponent(courseId)}`)
       .then((r) => r.json())
       .then((json) => {
-        if (!cancelled && json.success) setLoaded({ courseId, points: json.data as KnowledgePoint[] });
+        if (!cancelled && json.success)
+          setLoaded({ courseId, points: json.data as KnowledgePoint[] });
       })
       .catch(() => {
         /* 保持加载失败前的空列表状态 */
@@ -52,10 +54,10 @@ export function KnowledgeChecklist({ courseId, mastered, onToggle }: KnowledgeCh
     return [...map.entries()];
   }, [points]);
 
-  if (loading) return <p className="text-sm text-gray-500">加载知识点列表…</p>;
+  if (loading) return <p className="text-sm text-fg-muted">加载知识点列表…</p>;
   if (points.length === 0) {
     return (
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-fg-muted">
         该课程还没有知识点。请先在「上传资料」页上传教材生成知识图谱。
       </p>
     );
@@ -65,34 +67,38 @@ export function KnowledgeChecklist({ courseId, mastered, onToggle }: KnowledgeCh
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-gray-600">
-        已掌握 <span className="font-semibold text-brand-700">{masteredCount}</span> / {points.length} 个知识点
-        <span className="ml-2 text-xs text-gray-500">勾选即保存，学习路径会实时更新</span>
+      <p className="text-sm text-fg-muted">
+        已掌握 <span className="font-semibold text-acc-green">{masteredCount}</span> /{' '}
+        {points.length} 个知识点
+        <span className="ml-2 text-xs text-fg-subtle">勾选即保存，学习路径会实时更新</span>
       </p>
       {grouped.map(([chapter, list]) => (
         <div key={chapter}>
-          <p className="mb-1 text-xs font-semibold text-gray-500">{chapter}</p>
-          <div className="flex flex-wrap gap-x-4 gap-y-2">
+          <p className="mb-1.5 flex items-center gap-2 font-mono text-xs font-semibold tracking-wider text-fg-subtle">
+            <span aria-hidden="true" className="h-px w-4 bg-line-strong" />
+            {chapter}
+          </p>
+          <div className="flex flex-wrap gap-x-3 gap-y-2">
             {list.map((p) => {
               const checked = mastered.includes(p.name);
               return (
                 <label
                   key={p.id}
-                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-1 text-sm transition-colors ${
+                  className={`inline-flex cursor-pointer select-none items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm transition-all duration-200 [transition-timing-function:var(--ease-spring)] hover:-translate-y-0.5 ${
                     checked
-                      ? 'border-brand-500 bg-brand-50 text-brand-700'
-                      : 'border-surface-border bg-surface text-gray-700 hover:bg-surface-muted'
+                      ? 'border-acc-green bg-acc-green-soft font-medium text-fg'
+                      : 'border-line bg-surface text-fg-muted hover:border-line-strong hover:bg-surface-muted'
                   }`}
                 >
                   <input
                     type="checkbox"
-                    className="accent-brand-600"
+                    className="accent-acc-green"
                     checked={checked}
                     aria-label={`标记 ${p.name} 已掌握`}
                     onChange={(e) => onToggle(p.name, e.target.checked)}
                   />
                   {p.name}
-                  <span className="text-xs text-gray-600">难度{p.difficulty}</span>
+                  <span className="font-mono text-[10px] text-fg-subtle">难度{p.difficulty}</span>
                 </label>
               );
             })}

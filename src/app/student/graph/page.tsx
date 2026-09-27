@@ -11,6 +11,7 @@ import { KnowledgeDetail } from '@/components/knowledge/KnowledgeDetail';
 import { KnowledgeChecklist } from '@/components/knowledge/KnowledgeChecklist';
 import { CourseSelect } from '@/components/course/CourseSelect';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { PageHeader } from '@/components/ui/PageHeader';
 import type { GraphData, KnowledgePoint, MasteryState } from '@/types';
 
 const STUDENT_ID = 'demo-student';
@@ -18,7 +19,7 @@ const DEFAULT_COURSE = 'data-structures';
 
 export default function StudentGraphPage() {
   return (
-    <Suspense fallback={<p className="text-sm text-gray-500">加载中…</p>}>
+    <Suspense fallback={<p className="text-sm text-fg-muted">加载中…</p>}>
       <StudentGraphContent />
     </Suspense>
   );
@@ -27,9 +28,7 @@ export default function StudentGraphPage() {
 function StudentGraphContent() {
   const searchParams = useSearchParams();
   // 直接从 URL 初始化课程（支持 ?courseId= 直达指定课程），避免 effect 中同步 setState
-  const [courseId, setCourseId] = useState(
-    () => searchParams.get('courseId') ?? DEFAULT_COURSE,
-  );
+  const [courseId, setCourseId] = useState(() => searchParams.get('courseId') ?? DEFAULT_COURSE);
   // 数据按课程维度缓存，loading 由"已加载课程 !== 当前课程"派生（避免 effect 同步 setState）
   const [loaded, setLoaded] = useState<{
     courseId: string;
@@ -47,7 +46,9 @@ function StudentGraphContent() {
     let cancelled = false;
     Promise.all([
       fetch(`/api/graph/${encodeURIComponent(courseId)}`).then((r) => r.json()),
-      fetch(`/api/mastery?studentId=${STUDENT_ID}&courseId=${encodeURIComponent(courseId)}`).then((r) => r.json()),
+      fetch(`/api/mastery?studentId=${STUDENT_ID}&courseId=${encodeURIComponent(courseId)}`).then(
+        (r) => r.json(),
+      ),
     ]).then(([graphRes, masteryRes]) => {
       if (cancelled) return;
       setLoaded({
@@ -99,24 +100,27 @@ function StudentGraphContent() {
   const detailMastered = activeDetail ? mastered.includes(activeDetail.name) : false;
 
   return (
-    <div className="space-y-4">
-      <Breadcrumb items={[{ href: '/', label: '首页' }, { href: '/student/graph', label: '知识图谱' }]} />
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold">知识图谱浏览</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            节点为知识点，边为前置/包含/相关关系。支持缩放、拖拽，点击节点查看详情并标记掌握。
-          </p>
-        </div>
-        <CourseSelect value={courseId} onChange={setCourseId} />
-      </div>
+    <div className="space-y-5">
+      <Breadcrumb
+        items={[
+          { href: '/', label: '首页' },
+          { href: '/student/graph', label: '知识图谱' },
+        ]}
+      />
+      <PageHeader
+        eyebrow="Student · Graph"
+        title="知识图谱浏览"
+        description="节点为知识点，边为前置/包含/相关关系。支持缩放、拖拽，点击节点查看详情并标记掌握。"
+        accent="cyan"
+        actions={<CourseSelect value={courseId} onChange={setCourseId} />}
+      />
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="card lg:col-span-2">
+        <div className="card !p-5 lg:col-span-2">
           {loading ? (
-            <p className="text-sm text-gray-500">加载图谱中…</p>
+            <p className="text-sm text-fg-muted">加载图谱中…</p>
           ) : graph.nodes.length === 0 ? (
-            <p className="text-sm text-gray-500">该课程暂无图谱，请教师先上传课程资料。</p>
+            <p className="text-sm text-fg-muted">该课程暂无图谱，请教师先上传课程资料。</p>
           ) : (
             <GraphView data={graph} onNodeClick={handleNodeClick} />
           )}
@@ -126,17 +130,22 @@ function StudentGraphContent() {
           <KnowledgeDetail knowledge={activeDetail} />
           {activeDetail && (
             <button
-              className={detailMastered ? 'btn-ghost' : 'btn-primary'}
+              className={`btn w-full ${detailMastered ? 'btn-ghost' : 'btn-primary'}`}
               onClick={() => toggleMastered(activeDetail.name, !detailMastered)}
             >
-              {detailMastered ? `✓ 已掌握「${activeDetail.name}」（点击取消）` : `标记「${activeDetail.name}」为已掌握`}
+              {detailMastered
+                ? `✓ 已掌握「${activeDetail.name}」（点击取消）`
+                : `标记「${activeDetail.name}」为已掌握`}
             </button>
           )}
         </div>
       </div>
 
-      <div className="card">
-        <h2 className="mb-3 font-semibold">知识点掌握清单</h2>
+      <div className="card !p-6">
+        <h2 className="mb-3 flex items-center gap-2 font-semibold tracking-tight">
+          <span aria-hidden="true" className="h-3.5 w-[3px] rounded-full bg-acc-green" />
+          知识点掌握清单
+        </h2>
         <KnowledgeChecklist
           courseId={courseId}
           mastered={mastered}

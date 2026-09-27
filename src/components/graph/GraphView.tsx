@@ -1,36 +1,16 @@
 /**
  * 知识图谱可视化（A10.md 十三节：ECharts Graph）
  * 交互：缩放、拖拽、节点点击回调（详情由父组件处理）。
- * 视觉：节点蓝底白字、文字居中入内、尺寸按名称长度+难度自适应；
- *       三类关系「颜色+线型」双通道区分（前置实线红/包含虚线蓝/相关点线灰）；
- *       难度≥4 红色边框强调；图例为真实 HTML。
+ * 视觉：节点 blue 渐变底白字、文字居中入内、尺寸按名称长度+难度自适应；
+ *       三类关系「颜色+线型」双通道区分（前置实线红 2.2px / 包含虚线蓝 / 相关点线灰），
+ *       线宽区分语义权重；难度≥4 红色边框强调；图例为真实 HTML，颜色随主题切换。
  */
 'use client';
 
 import { useMemo } from 'react';
+import { useTheme } from 'next-themes';
 import ReactECharts from 'echarts-for-react';
 import type { GraphData } from '@/types';
-
-const EDGE_COLORS: Record<string, string> = {
-  前置: '#e5484d',
-  包含: '#4f6ef7',
-  相关: '#9ca3af',
-};
-
-const EDGE_LINE_TYPES: Record<string, 'solid' | 'dashed' | 'dotted'> = {
-  前置: 'solid',
-  包含: 'dashed',
-  相关: 'dotted',
-};
-
-const LINE_TYPE_LABEL: Record<string, string> = {
-  solid: '——',
-  dashed: '－－',
-  dotted: '····',
-};
-
-const NODE_FILL = '#4f6ef7';
-const NODE_TEXT_COLOR = '#ffffff';
 
 interface GraphViewProps {
   data: GraphData;
@@ -38,10 +18,33 @@ interface GraphViewProps {
 }
 
 export function GraphView({ data, onNodeClick }: GraphViewProps) {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+
+  const palette = useMemo(() => {
+    const css = getComputedStyle(document.documentElement);
+    const v = (name: string, fallback: string) => css.getPropertyValue(name).trim() || fallback;
+    return {
+      nodeFill: v('--acc-blue', '#0070f3'),
+      nodeFillDark: v('--acc-violet', '#7928ca'),
+      edgePrereq: v('--acc-red', '#e5484d'),
+      edgeContains: v('--acc-blue', '#0070f3'),
+      edgeRelated: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.32)',
+      highlight: v('--acc-amber', '#f5a623'),
+      tooltipBg: isDark ? '#161616' : '#ffffff',
+      tooltipFg: isDark ? '#ededf0' : '#0a0a0a',
+      tooltipBorder: isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.09)',
+    };
+  }, [isDark]);
 
   const option = useMemo(
     () => ({
       tooltip: {
+        backgroundColor: palette.tooltipBg,
+        borderWidth: 1,
+        borderColor: palette.tooltipBorder,
+        textStyle: { color: palette.tooltipFg, fontSize: 12 },
+        extraCssText: 'border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);',
         formatter: (params: { dataType?: string; data?: { name?: string; value?: number } }) => {
           if (params.dataType === 'node') {
             return `<b>${params.data?.name ?? ''}</b><br/>难度：${params.data?.value ?? '-'} / 5`;
@@ -65,14 +68,14 @@ export function GraphView({ data, onNodeClick }: GraphViewProps) {
             position: 'inside',
             fontSize: 11,
             fontWeight: 500,
-            color: NODE_TEXT_COLOR,
+            color: '#ffffff',
             overflow: 'truncate',
             width: 50,
           },
           emphasis: {
             focus: 'adjacency',
             label: { fontSize: 12 },
-            itemStyle: { shadowBlur: 12, shadowColor: 'rgba(79,110,247,0.3)' },
+            itemStyle: { shadowBlur: 16, shadowColor: palette.highlight },
           },
           data: data.nodes.map((n) => {
             const nameLen = n.name.length;
@@ -84,8 +87,19 @@ export function GraphView({ data, onNodeClick }: GraphViewProps) {
               value: diff,
               symbolSize: size,
               itemStyle: {
-                color: NODE_FILL,
-                ...(diff >= 4 ? { borderColor: '#e5484d', borderWidth: 2.5 } : {}),
+                color: {
+                  type: 'radial',
+                  x: 0.35,
+                  y: 0.3,
+                  r: 0.9,
+                  colorStops: [
+                    { offset: 0, color: palette.nodeFillDark },
+                    { offset: 1, color: palette.nodeFill },
+                  ],
+                },
+                shadowBlur: 6,
+                shadowColor: 'rgba(0,0,0,0.18)',
+                ...(diff >= 4 ? { borderColor: palette.edgePrereq, borderWidth: 2.5 } : {}),
               },
             };
           }),
@@ -94,17 +108,23 @@ export function GraphView({ data, onNodeClick }: GraphViewProps) {
             target: e.target,
             label: { show: false },
             lineStyle: {
-              color: EDGE_COLORS[e.type] ?? '#9ca3af',
-              type: EDGE_LINE_TYPES[e.type] ?? 'solid',
+              color:
+                e.type === '前置'
+                  ? palette.edgePrereq
+                  : e.type === '包含'
+                    ? palette.edgeContains
+                    : palette.edgeRelated,
+              type: e.type === '前置' ? 'solid' : e.type === '包含' ? 'dashed' : 'dotted',
               curveness: 0.12,
-              width: 1.6,
+              // 线宽区分语义权重：前置关系最重要（2.4px），包含次之，相关最细
+              width: e.type === '前置' ? 2.4 : e.type === '包含' ? 1.6 : 1,
             },
           })),
           lineStyle: { curveness: 0.12 },
         },
       ],
     }),
-    [data],
+    [data, palette],
   );
 
   const onEvents = {
@@ -117,16 +137,27 @@ export function GraphView({ data, onNodeClick }: GraphViewProps) {
 
   return (
     <div>
-      <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
-        {(Object.keys(EDGE_COLORS) as Array<keyof typeof EDGE_COLORS>).map((type) => (
+      <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fg-muted">
+        {(['前置', '包含', '相关'] as const).map((type) => (
           <span key={type} className="inline-flex items-center gap-1">
-            <span aria-hidden="true" style={{ color: EDGE_COLORS[type], letterSpacing: '-1px' }}>
-              {LINE_TYPE_LABEL[EDGE_LINE_TYPES[type]]}
+            <span
+              aria-hidden="true"
+              style={{
+                color:
+                  type === '前置'
+                    ? palette.edgePrereq
+                    : type === '包含'
+                      ? palette.edgeContains
+                      : palette.edgeRelated,
+                letterSpacing: '-1px',
+              }}
+            >
+              {type === '前置' ? '——' : type === '包含' ? '－－' : '····'}
             </span>
             {type}
           </span>
         ))}
-        <span className="text-gray-400 dark:text-gray-500">
+        <span className="text-fg-subtle">
           节点越大难度越高 · 滚轮缩放 · 拖拽平移 · 点击节点查看详情
         </span>
       </div>

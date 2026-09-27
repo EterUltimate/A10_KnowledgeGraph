@@ -1,22 +1,38 @@
 'use client';
 
 /**
- * 全局导航栏：品牌 + 主导航 + 右侧操作区（主题切换 + 用户菜单）。
- * 响应式：宽屏平铺导航，窄屏折叠为汉堡菜单。
+ * 全局导航栏：玻璃拟态吸顶 + 发丝线，品牌标 + 主导航（2px 滑动下划线）+ 主题/用户。
+ * 分组导航：教师端（blue）/ 学生端（violet）眉标区分；窄屏折叠为弹簧展开菜单。
  */
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { UserMenu } from '@/components/layout/UserMenu';
+import { LogoMark } from '@/components/layout/Footer';
 
-const NAV_ITEMS = [
-  { href: '/', label: '首页' },
-  { href: '/teacher/upload', label: '上传资料' },
-  { href: '/teacher/knowledge', label: '知识点管理' },
-  { href: '/student/graph', label: '知识图谱' },
-  { href: '/student/path', label: '学习路径' },
-  { href: '/student/qa', label: '智能问答' },
+const NAV_GROUPS: {
+  label: string;
+  accent: 'blue' | 'violet';
+  items: { href: string; label: string }[];
+}[] = [
+  {
+    label: '教师端',
+    accent: 'blue',
+    items: [
+      { href: '/teacher/upload', label: '上传资料' },
+      { href: '/teacher/knowledge', label: '知识点管理' },
+    ],
+  },
+  {
+    label: '学生端',
+    accent: 'violet',
+    items: [
+      { href: '/student/graph', label: '知识图谱' },
+      { href: '/student/path', label: '学习路径' },
+      { href: '/student/qa', label: '智能问答' },
+    ],
+  },
 ];
 
 export function NavBar() {
@@ -24,32 +40,58 @@ export function NavBar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-10 border-b border-surface-border bg-surface/90 backdrop-blur">
-      <nav className="mx-auto flex max-w-6xl items-center gap-1 px-4 py-3" aria-label="主导航">
-        <Link href="/" className="mr-4 flex shrink-0 items-center gap-2 text-base font-semibold text-brand-600">
-          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-brand-600 text-xs font-bold text-white">A10</span>
-          知识图谱
+    <header className="sticky top-0 z-40 border-b border-line bg-background/72 backdrop-blur-xl">
+      {/* 顶部 1px 渐变光束（赛博朋克微信号） */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-px"
+        style={{
+          background:
+            'linear-gradient(90deg, transparent 5%, var(--acc-blue) 30%, var(--acc-violet) 55%, var(--acc-cyan) 75%, transparent 95%)',
+          opacity: 0.5,
+        }}
+      />
+      <nav
+        className="mx-auto flex h-16 w-full max-w-6xl items-center gap-2 px-4 sm:px-6"
+        aria-label="主导航"
+      >
+        <Link
+          href="/"
+          className="group mr-2 flex shrink-0 items-center gap-2.5"
+          aria-label="返回首页"
+        >
+          <LogoMark className="h-6 w-6 transition-transform duration-300 [transition-timing-function:var(--ease-spring)] group-hover:rotate-[15deg] group-hover:scale-110" />
+          <span className="text-[15px] font-semibold tracking-tight">
+            A10 <span className="text-fg-muted">知识图谱</span>
+          </span>
         </Link>
 
-        {/* 桌面导航 */}
-        <div className="hidden flex-1 items-center gap-1 md:flex">
-          {NAV_ITEMS.map((item) => {
-            const active = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={active ? 'page' : undefined}
-                className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm transition-colors ${
-                  active
-                    ? 'bg-brand-50 font-medium text-brand-700'
-                    : 'text-gray-600 hover:bg-surface-muted dark:text-gray-300'
+        {/* 桌面导航（分组） */}
+        <div className="hidden flex-1 items-center gap-4 pl-4 md:flex">
+          {NAV_GROUPS.map((group) => (
+            <div key={group.label} className="flex items-center gap-0.5">
+              <span
+                className={`mr-1.5 hidden select-none font-mono text-[10px] uppercase tracking-[0.12em] lg:inline ${
+                  group.accent === 'blue' ? 'text-acc-blue' : 'text-acc-violet'
                 }`}
               >
-                {item.label}
-              </Link>
-            );
-          })}
+                {group.label}
+              </span>
+              {group.items.map((item) => {
+                const active = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={active ? 'page' : undefined}
+                    className={`nav-link ${active ? 'nav-link-active' : ''}`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </div>
 
         <div className="ml-auto flex items-center gap-2">
@@ -61,9 +103,19 @@ export function NavBar() {
             aria-label={mobileOpen ? '关闭菜单' : '打开菜单'}
             aria-expanded={mobileOpen}
             onClick={() => setMobileOpen((v) => !v)}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-surface-border text-gray-600 dark:text-gray-300 md:hidden"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-line text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg md:hidden"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              aria-hidden="true"
+              className={`transition-transform duration-300 [transition-timing-function:var(--ease-spring)] ${mobileOpen ? 'rotate-90' : ''}`}
+            >
               {mobileOpen ? (
                 <path d="M6 6l12 12M18 6L6 18" />
               ) : (
@@ -74,29 +126,44 @@ export function NavBar() {
         </div>
       </nav>
 
-      {/* 移动端展开菜单 */}
-      {mobileOpen && (
-        <div className="border-t border-surface-border bg-surface px-4 py-2 md:hidden">
-          {NAV_ITEMS.map((item) => {
-            const active = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={active ? 'page' : undefined}
-                onClick={() => setMobileOpen(false)}
-                className={`block rounded-lg px-3 py-2 text-sm ${
-                  active
-                    ? 'bg-brand-50 font-medium text-brand-700'
-                    : 'text-gray-600 hover:bg-surface-muted dark:text-gray-300'
+      {/* 移动端展开菜单（弹簧下落） */}
+      <div
+        className={`overflow-hidden border-line bg-background/95 backdrop-blur-xl transition-all duration-300 [transition-timing-function:var(--ease-spring)] md:hidden ${
+          mobileOpen ? 'max-h-96 border-t opacity-100' : 'max-h-0 opacity-0'
+        }`}
+      >
+        <div className="space-y-1 px-4 py-3">
+          {NAV_GROUPS.map((group) => (
+            <div key={group.label}>
+              <p
+                className={`mb-1 mt-2 font-mono text-[10px] uppercase tracking-[0.12em] ${
+                  group.accent === 'blue' ? 'text-acc-blue' : 'text-acc-violet'
                 }`}
               >
-                {item.label}
-              </Link>
-            );
-          })}
+                {group.label}
+              </p>
+              {group.items.map((item) => {
+                const active = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={active ? 'page' : undefined}
+                    onClick={() => setMobileOpen(false)}
+                    className={`block rounded-lg px-3 py-2 text-sm transition-colors ${
+                      active
+                        ? 'bg-surface-hover font-medium text-fg'
+                        : 'text-fg-muted hover:bg-surface-hover hover:text-fg'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </div>
-      )}
+      </div>
     </header>
   );
 }
