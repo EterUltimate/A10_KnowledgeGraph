@@ -96,8 +96,10 @@ test.describe('A10 主流程（离线演示模式）', () => {
     await page.goto(`/student/graph?courseId=${COURSE_ID}`);
     await expect(page.getByRole('heading', { name: '知识图谱浏览' })).toBeVisible();
 
-    // ECharts canvas 渲染出现（图谱非空标志）
-    const canvas = page.locator('canvas');
+    // ECharts canvas 渲染出现（图谱非空标志）。
+    // 注意：全局粒子背景也是 canvas，必须限定在图谱卡片内，否则门控在图谱数据
+    // 到达前就会放行，勾选与初始 mastery GET 产生竞态。
+    const canvas = page.locator('.card canvas');
     await expect(canvas.first()).toBeVisible({ timeout: 15_000 });
 
     // 掌握清单按章节分组渲染，勾选一个知识点并持久化

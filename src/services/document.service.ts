@@ -1,12 +1,12 @@
 /**
  * 文档解析服务（A10.md 十二节：上传 → 解析 → 清洗 → 切块）
  * tier2 真实实现：
- *  - PDF：pdf-parse（Next 打包排除已配置，走 lib 子路径避免其调试入口）
+ *  - PDF：pdf-parse v2（PDFParse 类；Next 打包排除已配置）
  *  - TXT：UTF-8 优先、乱码自动回退 GBK（国内教材常见编码）
  *  - 清洗：去页码/页眉/控制字符、压缩空行
  *  - 切块：章节标题感知（第X章/节/讲），按段落打包至目标块大小
  */
-import pdfParse from 'pdf-parse/lib/pdf-parse.js';
+import { PDFParse } from 'pdf-parse';
 import type { TextChunk } from '@/types';
 import { config } from '@/lib/config';
 
@@ -47,8 +47,13 @@ export async function parseFile(buffer: Buffer, filename: string): Promise<strin
   if (type === 'pdf') {
     // pdf-parse 需要至少 1 字节 buffer；空文件直接返回空文本
     if (buffer.length === 0) return '';
-    const result = await pdfParse(buffer);
-    return result.text;
+    const parser = new PDFParse({ data: buffer });
+    try {
+      const result = await parser.getText();
+      return result.text;
+    } finally {
+      await parser.destroy();
+    }
   }
   if (type === 'txt') {
     return decodeText(buffer);
