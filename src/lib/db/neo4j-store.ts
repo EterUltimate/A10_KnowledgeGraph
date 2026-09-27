@@ -78,7 +78,11 @@ export class Neo4jGraphStore implements GraphStore {
     }
   }
 
-  async buildGraph(points: KnowledgePoint[], relations: RelationInput[], courseId: string): Promise<void> {
+  async buildGraph(
+    points: KnowledgePoint[],
+    relations: RelationInput[],
+    courseId: string,
+  ): Promise<void> {
     const session = getSession('WRITE');
     try {
       await session.executeWrite(async (tx) => {
@@ -143,7 +147,9 @@ export class Neo4jGraphStore implements GraphStore {
         edges: edgesResult.records.map((r) => ({
           source: String(r.get('source')),
           target: String(r.get('target')),
-          type: RELATION_TYPE_LABELS[String(r.get('type')) as keyof typeof RELATION_TYPE_LABELS] ?? String(r.get('type')),
+          type:
+            RELATION_TYPE_LABELS[String(r.get('type')) as keyof typeof RELATION_TYPE_LABELS] ??
+            String(r.get('type')),
         })),
       };
     } finally {
@@ -246,7 +252,13 @@ export class Neo4jGraphStore implements GraphStore {
          ON CREATE SET a.id = $idA, a.definition = '（教师手工创建，待补充定义）', a.chapter = '未分类', a.difficulty = 3
          MERGE (b:Knowledge {courseId: $courseId, name: $target})
          ON CREATE SET b.id = $idB, b.definition = '（教师手工创建，待补充定义）', b.chapter = '未分类', b.difficulty = 3`,
-        { courseId, source: relation.source, target: relation.target, idA: crypto.randomUUID(), idB: crypto.randomUUID() },
+        {
+          courseId,
+          source: relation.source,
+          target: relation.target,
+          idA: crypto.randomUUID(),
+          idB: crypto.randomUUID(),
+        },
       );
       const safeType = assertRelationType(relation.type);
       await session.run(

@@ -12,7 +12,10 @@ import { verifyConnectivity } from '@/lib/db/neo4j';
 import { isLLMConfigured, pingLLM } from '@/lib/ai/provider';
 import { parseFile } from '@/services/document.service';
 
-const PARSER_SAMPLE = Buffer.from('A10 健康检查解析样例：栈是限定仅在表尾进行插入和删除的线性表。', 'utf8');
+const PARSER_SAMPLE = Buffer.from(
+  'A10 健康检查解析样例：栈是限定仅在表尾进行插入和删除的线性表。',
+  'utf8',
+);
 
 export async function GET() {
   const startedAt = Date.now();
@@ -30,11 +33,7 @@ export async function GET() {
 
   const llmConfigured = isLLMConfigured();
   const graphMode =
-    config.store.mode === 'json'
-      ? 'json（强制）'
-      : neo4jOk
-        ? 'neo4j'
-        : 'json（auto 降级）';
+    config.store.mode === 'json' ? 'json（强制）' : neo4jOk ? 'neo4j' : 'json（auto 降级）';
 
   const body = {
     status: parserOk ? 'ok' : 'unhealthy',

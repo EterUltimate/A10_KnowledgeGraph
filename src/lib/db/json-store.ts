@@ -31,7 +31,8 @@ export class JsonGraphStore implements GraphStore {
   private data: GraphFileData;
 
   constructor() {
-    this.data = globalForJson.__a10JsonGraph ?? readJsonFile<GraphFileData>(this.filePath, emptyData());
+    this.data =
+      globalForJson.__a10JsonGraph ?? readJsonFile<GraphFileData>(this.filePath, emptyData());
     globalForJson.__a10JsonGraph = this.data;
   }
 
@@ -55,7 +56,11 @@ export class JsonGraphStore implements GraphStore {
     this.flush();
   }
 
-  async buildGraph(points: KnowledgePoint[], relations: RelationInput[], courseId: string): Promise<void> {
+  async buildGraph(
+    points: KnowledgePoint[],
+    relations: RelationInput[],
+    courseId: string,
+  ): Promise<void> {
     for (const p of points) {
       const existing = this.findNode(courseId, p.name);
       if (existing) {
@@ -82,7 +87,12 @@ export class JsonGraphStore implements GraphStore {
         type: RELATION_TYPE_LABELS[r.type],
       }));
     return {
-      nodes: nodes.map((n) => ({ id: n.id, name: n.name, chapter: n.chapter, difficulty: n.difficulty })),
+      nodes: nodes.map((n) => ({
+        id: n.id,
+        name: n.name,
+        chapter: n.chapter,
+        difficulty: n.difficulty,
+      })),
       edges,
     };
   }
@@ -90,7 +100,10 @@ export class JsonGraphStore implements GraphStore {
   async listKnowledge(courseId: string): Promise<KnowledgePoint[]> {
     return this.data.nodes
       .filter((n) => (n.courseId ?? '') === courseId)
-      .sort((a, b) => a.chapter.localeCompare(b.chapter, 'zh-CN') || a.name.localeCompare(b.name, 'zh-CN'));
+      .sort(
+        (a, b) =>
+          a.chapter.localeCompare(b.chapter, 'zh-CN') || a.name.localeCompare(b.name, 'zh-CN'),
+      );
   }
 
   async getKnowledgeById(idOrName: string, courseId?: string): Promise<KnowledgePoint | null> {

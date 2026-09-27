@@ -78,17 +78,19 @@ export function decodeText(buffer: Buffer): string {
  *  3. 压缩 3 个以上连续空行为 2 行，压缩行内多余空白
  */
 export function cleanText(raw: string): string {
-  return raw
-    .replace(/\r\n?/g, '\n')
-    // 去除换页符与零宽字符，保留制表符
-    .replace(/[\f\v\u200b\u200e\u200f]/g, '')
-    // 独立成行的页码 / 页码对 / 破折号包裹页码
-    .split('\n')
-    .filter((line) => !/^\s*[-—－]?\s*\d{1,4}\s*(?:[/－\-—]\s*\d{1,4})?\s*[-—－]?\s*$/.test(line))
-    .join('\n')
-    .replace(/[ \t]+/g, ' ')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+  return (
+    raw
+      .replace(/\r\n?/g, '\n')
+      // 去除换页符与零宽字符，保留制表符
+      .replace(/[\f\v\u200b\u200e\u200f]/g, '')
+      // 独立成行的页码 / 页码对 / 破折号包裹页码
+      .split('\n')
+      .filter((line) => !/^\s*[-—－]?\s*\d{1,4}\s*(?:[/－\-—]\s*\d{1,4})?\s*[-—－]?\s*$/.test(line))
+      .join('\n')
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
+  );
 }
 
 /** 带章节信息的文本块 */
@@ -136,7 +138,10 @@ export function splitByChapter(text: string): Array<{ chapter: string; body: str
 export function chunkText(text: string, size: number = config.rag.chunkSize): ChunkWithChapter[] {
   const chunks: ChunkWithChapter[] = [];
   for (const section of splitByChapter(text)) {
-    const paragraphs = section.body.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+    const paragraphs = section.body
+      .split(/\n{2,}/)
+      .map((p) => p.trim())
+      .filter(Boolean);
     let buffer = '';
 
     const flush = () => {

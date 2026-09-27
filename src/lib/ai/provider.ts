@@ -9,11 +9,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateText, type LanguageModel } from 'ai';
-import {
-  getEffectiveLLMConfig,
-  isLLMConfigured,
-  type LLMConfig,
-} from '@/lib/ai/llm-config';
+import { getEffectiveLLMConfig, isLLMConfigured, type LLMConfig } from '@/lib/ai/llm-config';
 
 /**
  * LLM Base URL SSRF 防护（A-5）：
@@ -136,7 +132,8 @@ export async function listModels(cfg: LLMConfig): Promise<string[] | null> {
     let parse: (d: ListModelsResp) => string[];
     if (cfg.kind === 'gemini') {
       url = `${base}/models?key=${encodeURIComponent(cfg.apiKey)}`;
-      parse = (d) => (d.models ?? []).map((m) => (m.name ?? '').replace(/^models\//, '')).filter(Boolean);
+      parse = (d) =>
+        (d.models ?? []).map((m) => (m.name ?? '').replace(/^models\//, '')).filter(Boolean);
     } else if (cfg.kind === 'anthropic') {
       url = `${base}/v1/models`;
       headers = { 'x-api-key': cfg.apiKey, 'anthropic-version': '2023-06-01' };

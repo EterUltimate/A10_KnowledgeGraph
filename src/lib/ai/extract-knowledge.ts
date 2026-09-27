@@ -68,15 +68,16 @@ export async function extractKnowledge(text: string, courseId?: string): Promise
   const results: KnowledgePoint[][] = [];
   for (let i = 0; i < chunks.length; i += MAX_CONCURRENCY) {
     const batch = chunks.slice(i, i + MAX_CONCURRENCY);
-    const settled = await Promise.allSettled(
-      batch.map((chunk) => extractChunk(chunk, courseId)),
-    );
+    const settled = await Promise.allSettled(batch.map((chunk) => extractChunk(chunk, courseId)));
     for (const r of settled) {
       if (r.status === 'fulfilled') {
         results.push(r.value);
       } else {
         // 单块抽取失败不中断整体流程（允许一定冗余与缺失，见准确率测试报告）
-        console.warn('[extractKnowledge] 单块抽取失败，跳过：', r.reason instanceof Error ? r.reason.message : r.reason);
+        console.warn(
+          '[extractKnowledge] 单块抽取失败，跳过：',
+          r.reason instanceof Error ? r.reason.message : r.reason,
+        );
       }
     }
   }

@@ -20,9 +20,7 @@ const RELATION_BATCH_SIZE = 40;
 
 /** 过滤：只保留允许的三类关系，其余丢弃（A10.md 十一节） */
 export function filterValidRelations(relations: Relation[]): Relation[] {
-  return relations.filter((r) =>
-    ['PREREQUISITE', 'CONTAINS', 'RELATED'].includes(r.type),
-  );
+  return relations.filter((r) => ['PREREQUISITE', 'CONTAINS', 'RELATED'].includes(r.type));
 }
 
 /**
@@ -77,8 +75,10 @@ export async function extractRelations(points: KnowledgePoint[]): Promise<Relati
       });
       if (output) all.push(...output.relations);
     } catch (err) {
-      console.warn(`[extractRelations] 第 ${Math.floor(i / RELATION_BATCH_SIZE) + 1} 批抽取失败，跳过：`,
-        err instanceof Error ? err.message : err);
+      console.warn(
+        `[extractRelations] 第 ${Math.floor(i / RELATION_BATCH_SIZE) + 1} 批抽取失败，跳过：`,
+        err instanceof Error ? err.message : err,
+      );
     }
   }
 
