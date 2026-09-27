@@ -4,7 +4,7 @@
  */
 'use client';
 
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { GraphView } from '@/components/graph/GraphView';
 import { KnowledgeDetail } from '@/components/knowledge/KnowledgeDetail';
@@ -36,6 +36,8 @@ function StudentGraphContent() {
     mastered: string[];
   }>({ courseId: '', graph: { nodes: [], edges: [] }, mastered: [] });
   const [detail, setDetail] = useState<{ courseId: string; point: KnowledgePoint } | null>(null);
+  // mastery 写入序号：初始 GET 若迟于用户勾选（POST）完成，丢弃过期响应避免覆盖用户操作
+  const masteryVersion = useRef(0);
 
   const loading = loaded.courseId !== courseId;
   const graph = loading ? { nodes: [], edges: [] } : loaded.graph;
@@ -44,13 +46,14 @@ function StudentGraphContent() {
   // 切换课程：拉取图谱 + 掌握状态
   useEffect(() => {
     let cancelled = false;
+    const versionAtStart = masteryVersion.current;
     Promise.all([
       fetch(`/api/graph/${encodeURIComponent(courseId)}`).then((r) => r.json()),
       fetch(`/api/mastery?studentId=${STUDENT_ID}&courseId=${encodeURIComponent(courseId)}`).then(
         (r) => r.json(),
       ),
     ]).then(([graphRes, masteryRes]) => {
-      if (cancelled) return;
+      if (cancelled || versionAtStart !== masteryVersion.current) return;
       setLoaded({
         courseId,
         graph: graphRes.success ? (graphRes.data as GraphData) : { nodes: [], edges: [] },
@@ -88,6 +91,7 @@ function StudentGraphContent() {
       });
       const json = await res.json();
       if (json.success) {
+        masteryVersion.current += 1;
         setLoaded((d) =>
           d.courseId === courseId ? { ...d, mastered: (json.data as MasteryState).mastered } : d,
         );

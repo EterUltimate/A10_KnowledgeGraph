@@ -5,7 +5,7 @@
  */
 'use client';
 
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { KnowledgeChecklist } from '@/components/knowledge/KnowledgeChecklist';
 import { PathList } from '@/components/path/PathList';
@@ -33,19 +33,29 @@ function StudentPathContent() {
     studentId: STUDENT_ID,
     recommendations: [],
   });
+  // mastery 写入序号：初始 GET 若迟于用户勾选（POST）完成，丢弃过期响应避免覆盖用户操作；
+  // courseIdRef 用于丢弃课程切换后仍在途的旧 toggle 响应（防止旧课程掌握状态串显到新课程）
+  const masteryVersion = useRef(0);
+  const courseIdRef = useRef(courseId);
+
+  useEffect(() => {
+    courseIdRef.current = courseId;
+  }, [courseId]);
 
   const loadPath = useCallback((cid: string) => {
     fetch(`/api/path/${STUDENT_ID}?courseId=${encodeURIComponent(cid)}&limit=5`)
       .then((r) => r.json())
       .then((json) => {
-        if (json.success) setPath(json.data as PathRecommendation);
+        if (json.success && courseIdRef.current === cid) setPath(json.data as PathRecommendation);
       });
   }, []);
 
   useEffect(() => {
+    const versionAtStart = masteryVersion.current;
     fetch(`/api/mastery?studentId=${STUDENT_ID}&courseId=${encodeURIComponent(courseId)}`)
       .then((r) => r.json())
       .then((json) => {
+        if (versionAtStart !== masteryVersion.current) return;
         if (json.success) setMastered((json.data as MasteryState).mastered);
       });
     loadPath(courseId);
@@ -54,19 +64,22 @@ function StudentPathContent() {
   // 勾选/取消掌握：持久化并刷新推荐
   const toggleMastered = useCallback(
     async (name: string, checked: boolean) => {
+      const cid = courseId;
       const res = await fetch('/api/mastery', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           studentId: STUDENT_ID,
-          courseId,
+          courseId: cid,
           action: checked ? 'add' : 'remove',
           knowledgeName: name,
         }),
       });
       const json = await res.json();
-      if (json.success) setMastered((json.data as MasteryState).mastered);
-      loadPath(courseId);
+      if (!json.success || courseIdRef.current !== cid) return;
+      masteryVersion.current += 1;
+      setMastered((json.data as MasteryState).mastered);
+      loadPath(cid);
     },
     [courseId, loadPath],
   );

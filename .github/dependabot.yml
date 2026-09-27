@@ -5,6 +5,15 @@ updates:
     schedule:
       interval: 'weekly'
     open-pull-requests-limit: 5
+    ignore:
+      # TS 7 被 typescript-eslint 阻塞（8.70.x peer <6.1.0，运行时硬拒绝），升 7 会使 npm run lint 失败。
+      # 当前锁 TS 6.0.x（官方桥接版本）；待 typescript-eslint 支持 TS 7 后移除本规则。背景：issue #41 / PR #52。
+      - dependency-name: 'typescript'
+        versions: ['>=6.1']
+      # eslint 10 被 eslint-config-next 16 的插件依赖阻塞（eslint-plugin-react/jsx-a11y/import 的 peer 均不含 10，
+      # npm ci 因 peer 冲突直接失败）。待 eslint-config-next 的插件树支持 10 后移除本规则。
+      - dependency-name: 'eslint'
+        versions: ['>=10']
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
