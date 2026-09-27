@@ -16,15 +16,19 @@ import { config } from '@/lib/config';
 import { readJsonFile, writeJsonFile } from '@/lib/db/json-file';
 
 export type LLMProviderKind =
-  | 'openai-compatible'
-  | 'openai-chat'
-  | 'openai-responses'
-  | 'anthropic'
-  | 'gemini';
+  'openai-compatible' | 'openai-chat' | 'openai-responses' | 'anthropic' | 'gemini';
 
 export const PROVIDER_KINDS: { value: LLMProviderKind; label: string; hint: string }[] = [
-  { value: 'openai-compatible', label: 'OpenAI 兼容（DeepSeek/Qwen 等）', hint: 'POST /chat/completions，最通用' },
-  { value: 'openai-chat', label: 'OpenAI Chat', hint: 'POST /chat/completions（官方 api.openai.com）' },
+  {
+    value: 'openai-compatible',
+    label: 'OpenAI 兼容（DeepSeek/Qwen 等）',
+    hint: 'POST /chat/completions，最通用',
+  },
+  {
+    value: 'openai-chat',
+    label: 'OpenAI Chat',
+    hint: 'POST /chat/completions（官方 api.openai.com）',
+  },
   { value: 'openai-responses', label: 'OpenAI Responses', hint: 'POST /responses（新格式）' },
   { value: 'anthropic', label: 'Anthropic（Claude）', hint: 'POST /v1/messages' },
   { value: 'gemini', label: 'Google Gemini', hint: ':generateContent' },

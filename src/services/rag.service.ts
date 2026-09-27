@@ -125,9 +125,7 @@ export async function retrieve(question: string, courseId?: string): Promise<Tex
 
 /** 把文本块拼成问答上下文（带章节标注） */
 export function buildContext(chunks: TextChunk[]): string {
-  return chunks
-    .map((c) => `【${c.chapter ?? '未分类'}】${c.content}`)
-    .join('\n\n');
+  return chunks.map((c) => `【${c.chapter ?? '未分类'}】${c.content}`).join('\n\n');
 }
 
 /** 从 chunk 构造引用列表 */
@@ -199,7 +197,10 @@ export async function answer(
     });
     return { answer: text, references };
   } catch (err) {
-    console.warn('[rag.answer] LLM 调用失败，降级为离线抽取式回答：', err instanceof Error ? err.message : err);
+    console.warn(
+      '[rag.answer] LLM 调用失败，降级为离线抽取式回答：',
+      err instanceof Error ? err.message : err,
+    );
     return { answer: extractiveAnswer(question, chunks), references };
   }
 }

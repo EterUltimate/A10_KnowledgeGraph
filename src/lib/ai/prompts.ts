@@ -65,9 +65,7 @@ export function buildKnowledgeExtractionUserPrompt(text: string, chapterHint?: s
  * 给知识点带上编号与章节信息，帮助模型理解概念体系层级。
  */
 export function buildRelationExtractionUserPrompt(points: KnowledgePointBrief[]): string {
-  const lines = points
-    .map((p, i) => `${i + 1}. ${p.name}（章节：${p.chapter}）`)
-    .join('\n');
+  const lines = points.map((p, i) => `${i + 1}. ${p.name}（章节：${p.chapter}）`).join('\n');
   return `以下是已抽取的知识点列表：\n${lines}\n\n请识别这些知识点之间的三类关系（PREREQUISITE/CONTAINS/RELATED），并按 system 要求返回 JSON。`;
 }
 

@@ -10,7 +10,13 @@ import { ok, fail } from '@/lib/http';
 import { requireTeacher } from '@/lib/auth-guard';
 import { checkRateLimit, clientIp } from '@/lib/rate-limit';
 import { config, isLLMConfigured } from '@/lib/config';
-import { detectFileType, parseFile, verifyFileMagic, cleanText, buildChunks } from '@/services/document.service';
+import {
+  detectFileType,
+  parseFile,
+  verifyFileMagic,
+  cleanText,
+  buildChunks,
+} from '@/services/document.service';
 import { extractKnowledge } from '@/lib/ai/extract-knowledge';
 import { extractRelations } from '@/lib/ai/extract-relations';
 import { buildGraph } from '@/services/graph.service';

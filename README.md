@@ -120,7 +120,7 @@ npm run start
   `DEMO_STUDENT_PASS` 覆盖；缺省值仅用于本地演示与 e2e，生产必须修改）
 - 会话为 JWT（Auth.js v5 Credentials Provider，无数据库依赖），签名密钥 `AUTH_SECRET`，
   生产部署必须改为强随机值
-- 未登录/学生角色调用教师写 API 返回 401/403（middleware 与路由内守卫双层校验）
+- 未登录/学生角色调用教师写 API 返回 401/403（proxy 中间件与路由内守卫双层校验）
 
 ## 六、常见问题（FAQ）
 

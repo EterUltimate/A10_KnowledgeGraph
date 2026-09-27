@@ -5,7 +5,10 @@
 import { ok, fail } from '@/lib/http';
 import { getGraph } from '@/services/graph.service';
 
-export async function GET(_request: Request, { params }: { params: Promise<{ courseId: string }> }) {
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ courseId: string }> },
+) {
   const { courseId } = await params;
   try {
     const graph = await getGraph(courseId);

@@ -35,3 +35,6 @@ next-env.d.ts
 /blob-report/
 /playwright/.cache/
 coverage/
+
+# screenshots (视觉验收产物)
+/screenshots/

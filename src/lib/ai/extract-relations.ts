@@ -4,7 +4,7 @@
  * 结果做三重清洗：类型白名单过滤 → 端点存在性校验 → 自环/重复去重。
  * 无 LLM Key（离线演示模式）：返回内置演示关系集。
  */
-import { generateObject } from 'ai';
+import { generateText, Output } from 'ai';
 import type { KnowledgePoint, Relation } from '@/types';
 import { getLLM, isLLMConfigured } from '@/lib/ai/provider';
 import { relationExtractionSchema } from '@/lib/ai/schemas';
@@ -20,9 +20,7 @@ const RELATION_BATCH_SIZE = 40;
 
 /** 过滤：只保留允许的三类关系，其余丢弃（A10.md 十一节） */
 export function filterValidRelations(relations: Relation[]): Relation[] {
-  return relations.filter((r) =>
-    ['PREREQUISITE', 'CONTAINS', 'RELATED'].includes(r.type),
-  );
+  return relations.filter((r) => ['PREREQUISITE', 'CONTAINS', 'RELATED'].includes(r.type));
 }
 
 /**
@@ -68,17 +66,19 @@ export async function extractRelations(points: KnowledgePoint[]): Promise<Relati
   for (let i = 0; i < briefs.length; i += RELATION_BATCH_SIZE) {
     const batch = briefs.slice(i, i + RELATION_BATCH_SIZE);
     try {
-      const { object } = await generateObject({
+      const { output } = await generateText({
         model: getLLM(),
-        schema: relationExtractionSchema,
+        output: Output.object({ schema: relationExtractionSchema }),
         system: RELATION_EXTRACTION_SYSTEM_PROMPT,
         prompt: buildRelationExtractionUserPrompt(batch),
         temperature: 0.2,
       });
-      all.push(...object.relations);
+      if (output) all.push(...output.relations);
     } catch (err) {
-      console.warn(`[extractRelations] 第 ${Math.floor(i / RELATION_BATCH_SIZE) + 1} 批抽取失败，跳过：`,
-        err instanceof Error ? err.message : err);
+      console.warn(
+        `[extractRelations] 第 ${Math.floor(i / RELATION_BATCH_SIZE) + 1} 批抽取失败，跳过：`,
+        err instanceof Error ? err.message : err,
+      );
     }
   }
 

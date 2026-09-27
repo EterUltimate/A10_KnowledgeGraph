@@ -4,14 +4,15 @@
  */
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ChatPanel } from '@/components/qa/ChatPanel';
 import { CourseSelect } from '@/components/course/CourseSelect';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 export default function StudentQAPage() {
   return (
-    <Suspense fallback={<p className="text-sm text-gray-500">加载中…</p>}>
+    <Suspense fallback={<p className="text-sm text-fg-muted">加载中…</p>}>
       <StudentQAContent />
     </Suspense>
   );
@@ -19,25 +20,18 @@ export default function StudentQAPage() {
 
 function StudentQAContent() {
   const searchParams = useSearchParams();
-  const [courseId, setCourseId] = useState('data-structures');
-
-  // 支持 ?courseId= 直达指定课程
-  useEffect(() => {
-    const param = searchParams.get('courseId');
-    if (param) setCourseId(param);
-  }, [searchParams]);
+  // 直接从 URL 初始化课程（支持 ?courseId= 直达指定课程），避免 effect 中同步 setState
+  const [courseId, setCourseId] = useState(() => searchParams.get('courseId') ?? 'data-structures');
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold">课程智能问答</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            基于教材内容的 RAG 问答，AI 只依据检索到的教材片段作答并标注参考章节。
-          </p>
-        </div>
-        <CourseSelect value={courseId} onChange={setCourseId} />
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        eyebrow="Student · QA"
+        title="课程智能问答"
+        description="基于教材内容的 RAG 问答，AI 只依据检索到的教材片段作答并标注参考章节。"
+        accent="green"
+        actions={<CourseSelect value={courseId} onChange={setCourseId} />}
+      />
       <ChatPanel courseId={courseId} />
     </div>
   );
