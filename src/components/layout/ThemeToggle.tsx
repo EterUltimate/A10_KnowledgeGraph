@@ -2,14 +2,20 @@
 
 /**
  * 深/浅主题切换按钮：next-themes 驱动，挂载前渲染占位避免 hydration 抖动。
+ * mounted 用 useSyncExternalStore 判定（服务端/首帧 false），避免 effect 中 setState。
  */
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import { useTheme } from 'next-themes';
+
+const emptySubscribe = () => () => {};
 
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
 
   const isDark = resolvedTheme === 'dark';
   return (

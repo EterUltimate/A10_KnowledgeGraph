@@ -1,14 +1,14 @@
 /**
  * 智能问答对话面板（A10.md 十五节）
- * 基于 Vercel AI SDK v5 useChat 连接 /api/qa 流式接口；
+ * 基于 Vercel AI SDK v7 useChat 连接 /api/qa 流式接口；
  * tier2：支持课程上下文（courseId 随请求发送），展示"参考章节"引用块。
  *
- * 注意：v5 的 useChat 不会响应 transport 实例变化（chat 实例仅在首次渲染创建），
- * 因此课程切换时通过 body 函数 + ref 动态读取最新 courseId，而不是重建 transport。
+ * 注意：v7 的 useChat 在每次发送时读取最新 transport（latestRef 委托），
+ * 因此按 courseId 用 useMemo 重建 transport 即可随课程切换生效，消息状态保留。
  */
 'use client';
 
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import type { A10UIMessage } from '@/types';
@@ -19,19 +19,14 @@ interface ChatPanelProps {
 }
 
 export function ChatPanel({ courseId }: ChatPanelProps) {
-  // ref 始终指向最新 courseId；body 以函数形式在每次请求时读取
-  const courseIdRef = useRef(courseId);
-  useEffect(() => {
-    courseIdRef.current = courseId;
-  }, [courseId]);
-
-  // transport 只创建一次（useChat 不支持运行时更换），courseId 通过 body 函数动态注入
-  const [transport] = useState(
+  // transport 随课程切换重建（useChat 发送时读取最新 transport，消息状态不丢失）
+  const transport = useMemo(
     () =>
       new DefaultChatTransport<A10UIMessage>({
         api: '/api/qa',
-        body: () => ({ courseId: courseIdRef.current }),
+        body: { courseId },
       }),
+    [courseId],
   );
 
   const { messages, sendMessage, status, error } = useChat<A10UIMessage>({ transport });

@@ -4,7 +4,7 @@
  * - 教师写 API（POST/PATCH/PUT/DELETE）：未登录 401，非教师 403（route handler 内二次校验）
  * - 其余路径（学生端页面、读接口、登录端点 /api/auth/*）不拦截
  *
- * 注意：middleware 运行在 Edge Runtime，这里使用独立的最小 NextAuth 配置
+ * 注意：proxy（Next 16 中由 middleware 更名）运行在 Edge Runtime，这里使用独立的最小 NextAuth 配置
  * （只做 JWT 会话校验，不引入凭证认证与 Node 依赖），密钥与 src/auth.ts 保持一致。
  */
 import NextAuth from 'next-auth';

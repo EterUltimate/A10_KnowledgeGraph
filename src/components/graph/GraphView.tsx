@@ -9,7 +9,6 @@
 
 import { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
-import { useTheme } from 'next-themes';
 import type { GraphData } from '@/types';
 
 const EDGE_COLORS: Record<string, string> = {
@@ -32,7 +31,6 @@ const LINE_TYPE_LABEL: Record<string, string> = {
 
 const NODE_FILL = '#4f6ef7';
 const NODE_TEXT_COLOR = '#ffffff';
-const NODE_HIGHLIGHT = '#d97706';
 
 interface GraphViewProps {
   data: GraphData;
@@ -40,9 +38,6 @@ interface GraphViewProps {
 }
 
 export function GraphView({ data, onNodeClick }: GraphViewProps) {
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === 'dark';
-  const edgeLabelColor = isDark ? '#8b93a3' : '#6b7280';
 
   const option = useMemo(
     () => ({
@@ -109,7 +104,7 @@ export function GraphView({ data, onNodeClick }: GraphViewProps) {
         },
       ],
     }),
-    [data, edgeLabelColor],
+    [data],
   );
 
   const onEvents = {

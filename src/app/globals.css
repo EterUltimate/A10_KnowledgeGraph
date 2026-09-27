@@ -1,9 +1,11 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+/* class 策略暗色模式：next-themes 在 <html> 上切换 .dark（对应 v3 darkMode: 'class'） */
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* 设计 token（遵循 frontend-design 规范：语义化变量集中管理）。
-   颜色以 RGB 三元组存储，供 tailwind <alpha-value> 组合透明度；
+   Tailwind v4：颜色以 RGB 三元组存储，下方 @theme inline 映射为 Tailwind 颜色，
+   透明度修饰符（如 bg-surface/80）由 v4 的 color-mix 自动支持；
    .dark 仅覆盖变量值即完成主题切换，组件无需逐个加 dark: 变体。 */
 :root {
   --brand-50: 238 244 255;
@@ -22,7 +24,6 @@
   --fg: 31 36 48;
   --fg-muted: 107 114 128;
 
-  --radius: 12px;
   color-scheme: light;
 }
 
@@ -46,21 +47,48 @@
   color-scheme: dark;
 }
 
-* {
-  box-sizing: border-box;
+@theme inline {
+  --color-brand-50: rgb(var(--brand-50));
+  --color-brand-100: rgb(var(--brand-100));
+  --color-brand-500: rgb(var(--brand-500));
+  --color-brand-600: rgb(var(--brand-600));
+  --color-brand-700: rgb(var(--brand-700));
+
+  --color-surface: rgb(var(--surface));
+  --color-surface-muted: rgb(var(--surface-muted));
+  --color-surface-border: rgb(var(--surface-border));
+
+  --color-accent: rgb(var(--accent));
+  --color-accent-soft: rgb(var(--accent-soft));
+
+  --font-sans: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 
-html,
-body {
-  padding: 0;
-  margin: 0;
-  background: rgb(var(--surface-muted));
-  color: rgb(var(--fg));
-}
+@layer base {
+  /* v3 兼容：v4 的边框默认色改为 currentColor，这里统一回语义边框色 */
+  *,
+  ::before,
+  ::after {
+    border-color: rgb(var(--surface-border));
+  }
 
-a {
-  color: inherit;
-  text-decoration: none;
+  /* v3 兼容：v4 preflight 不再给按钮设置 pointer 光标 */
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+
+  html,
+  body {
+    padding: 0;
+    margin: 0;
+    background: rgb(var(--surface-muted));
+    color: rgb(var(--fg));
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
 }
 
 /* 强调文本（重点突出，配合 accent 强调色） */
@@ -83,16 +111,18 @@ a {
 
 @layer components {
   .card {
-    @apply rounded-xl border border-surface-border bg-surface p-5 shadow-sm;
+    @apply rounded-xl border border-surface-border bg-surface p-5 shadow-xs;
   }
-  .btn {
+  .btn,
+  .btn-primary,
+  .btn-ghost {
     @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors;
   }
   .btn-primary {
-    @apply btn bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50;
+    @apply bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50;
   }
   .btn-ghost {
-    @apply btn border border-surface-border bg-surface text-gray-700 hover:bg-surface-muted dark:text-gray-200;
+    @apply border border-surface-border bg-surface text-gray-700 hover:bg-surface-muted dark:text-gray-200;
   }
   .label {
     @apply mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300;

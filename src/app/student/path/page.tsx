@@ -25,18 +25,15 @@ export default function StudentPathPage() {
 
 function StudentPathContent() {
   const searchParams = useSearchParams();
-  const [courseId, setCourseId] = useState(DEFAULT_COURSE);
+  // 直接从 URL 初始化课程（支持 ?courseId= 直达指定课程），避免 effect 中同步 setState
+  const [courseId, setCourseId] = useState(
+    () => searchParams.get('courseId') ?? DEFAULT_COURSE,
+  );
   const [mastered, setMastered] = useState<string[]>([]);
   const [path, setPath] = useState<PathRecommendation>({
     studentId: STUDENT_ID,
     recommendations: [],
   });
-
-  // 支持 ?courseId= 直达指定课程（与图谱页/上传完成页跳转联动）
-  useEffect(() => {
-    const param = searchParams.get('courseId');
-    if (param) setCourseId(param);
-  }, [searchParams]);
 
   const loadPath = useCallback((cid: string) => {
     fetch(`/api/path/${STUDENT_ID}?courseId=${encodeURIComponent(cid)}&limit=5`)

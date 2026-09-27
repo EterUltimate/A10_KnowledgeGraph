@@ -18,7 +18,6 @@ const result = await autocannon({
 });
 
 const p99 = result.latency.p99;
-const non2xx = (result['2xx'] ?? 0) === 0 ? result.requests.total : 0; // 0 个 2xx 才视为异常
 const errors = result.errors + result.timeouts + result.non2xx;
 const pass = p99 <= 2000 && errors === 0 && result.requests.total > 0;
 

@@ -62,7 +62,7 @@ function buildModel(cfg: LLMConfig): LanguageModel {
         name: 'a10-llm',
         baseURL: cfg.baseURL,
         apiKey: cfg.apiKey,
-      }).chatModel(cfg.model);
+      }).languageModel(cfg.model);
   }
 }
 

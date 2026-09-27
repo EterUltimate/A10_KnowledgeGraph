@@ -1,9 +1,9 @@
 /**
  * 知识点抽取（A10.md 十节）
- * 有 LLM Key：按文本块并行 generateObject（zod schema 强制 JSON），合并去重。
+ * 有 LLM Key：按文本块并行 generateText + Output.object（zod schema 强制 JSON），合并去重。
  * 无 LLM Key（离线演示模式）：返回内置《数据结构》演示数据集，保证全流程可跑通。
  */
-import { generateObject } from 'ai';
+import { generateText, Output } from 'ai';
 import type { KnowledgePoint } from '@/types';
 import { getLLM, isLLMConfigured } from '@/lib/ai/provider';
 import { knowledgeExtractionSchema } from '@/lib/ai/schemas';
@@ -31,14 +31,15 @@ async function extractChunk(
   chunk: { content: string; chapter: string },
   courseId?: string,
 ): Promise<KnowledgePoint[]> {
-  const { object } = await generateObject({
+  const { output } = await generateText({
     model: getLLM(),
-    schema: knowledgeExtractionSchema,
+    output: Output.object({ schema: knowledgeExtractionSchema }),
     system: KNOWLEDGE_EXTRACTION_SYSTEM_PROMPT,
     prompt: buildKnowledgeExtractionUserPrompt(chunk.content, chunk.chapter),
     temperature: 0.2,
   });
-  return object.knowledge.map((k) => ({
+  if (!output) throw new Error('模型未返回有效结构化输出');
+  return output.knowledge.map((k) => ({
     id: `k-${normalizeName(k.name)}`,
     name: k.name.trim(),
     definition: k.definition.trim(),

@@ -4,7 +4,7 @@
  */
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ChatPanel } from '@/components/qa/ChatPanel';
 import { CourseSelect } from '@/components/course/CourseSelect';
@@ -19,13 +19,10 @@ export default function StudentQAPage() {
 
 function StudentQAContent() {
   const searchParams = useSearchParams();
-  const [courseId, setCourseId] = useState('data-structures');
-
-  // 支持 ?courseId= 直达指定课程
-  useEffect(() => {
-    const param = searchParams.get('courseId');
-    if (param) setCourseId(param);
-  }, [searchParams]);
+  // 直接从 URL 初始化课程（支持 ?courseId= 直达指定课程），避免 effect 中同步 setState
+  const [courseId, setCourseId] = useState(
+    () => searchParams.get('courseId') ?? 'data-structures',
+  );
 
   return (
     <div className="space-y-4">

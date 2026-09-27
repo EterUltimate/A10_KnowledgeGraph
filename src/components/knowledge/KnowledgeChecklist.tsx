@@ -8,6 +8,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { KnowledgePoint } from '@/types';
 
+const EMPTY_POINTS: KnowledgePoint[] = [];
+
 interface KnowledgeChecklistProps {
   courseId: string;
   mastered: string[];
@@ -15,17 +17,28 @@ interface KnowledgeChecklistProps {
 }
 
 export function KnowledgeChecklist({ courseId, mastered, onToggle }: KnowledgeChecklistProps) {
-  const [points, setPoints] = useState<KnowledgePoint[]>([]);
-  const [loading, setLoading] = useState(true);
+  // 数据按课程维度缓存，loading 由"已加载课程 !== 当前课程"派生（避免 effect 同步 setState）
+  const [loaded, setLoaded] = useState<{ courseId: string; points: KnowledgePoint[] }>({
+    courseId: '',
+    points: [],
+  });
+
+  const loading = loaded.courseId !== courseId;
+  const points = loading ? EMPTY_POINTS : loaded.points;
 
   useEffect(() => {
-    setLoading(true);
+    let cancelled = false;
     fetch(`/api/knowledge?courseId=${encodeURIComponent(courseId)}`)
       .then((r) => r.json())
       .then((json) => {
-        if (json.success) setPoints(json.data as KnowledgePoint[]);
+        if (!cancelled && json.success) setLoaded({ courseId, points: json.data as KnowledgePoint[] });
       })
-      .finally(() => setLoading(false));
+      .catch(() => {
+        /* 保持加载失败前的空列表状态 */
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [courseId]);
 
   // 按章节分组（保持接口返回的章节顺序）

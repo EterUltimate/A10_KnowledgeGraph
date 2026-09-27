@@ -14,7 +14,7 @@ vi.mock('@/auth', () => ({
   auth: async () => (authState.user ? { user: authState.user } : null),
 }));
 
-import { GET as knowledgeGET, POST as knowledgePOST } from '@/app/api/knowledge/route';
+import { POST as knowledgePOST } from '@/app/api/knowledge/route';
 import { PATCH as knowledgePATCH, DELETE as knowledgeDELETE } from '@/app/api/knowledge/[id]/route';
 import { GET as relationGET, POST as relationPOST, DELETE as relationDELETE } from '@/app/api/relation/route';
 import { GET as masteryGET, POST as masteryPOST } from '@/app/api/mastery/route';
@@ -291,7 +291,7 @@ describe('POST /api/course/upload（上传建图）', () => {
 
 describe('GET /api/health（A-3）', () => {
   it('正例：200 且三自检结构完整', async () => {
-    const res = await healthGET(new NextRequest(BASE + '/api/health'));
+    const res = await healthGET();
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
       status: string;

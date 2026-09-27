@@ -26,32 +26,39 @@ export default function StudentGraphPage() {
 
 function StudentGraphContent() {
   const searchParams = useSearchParams();
-  const [courseId, setCourseId] = useState(DEFAULT_COURSE);
-  const [graph, setGraph] = useState<GraphData>({ nodes: [], edges: [] });
-  const [detail, setDetail] = useState<KnowledgePoint | null>(null);
-  const [mastered, setMastered] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  // 直接从 URL 初始化课程（支持 ?courseId= 直达指定课程），避免 effect 中同步 setState
+  const [courseId, setCourseId] = useState(
+    () => searchParams.get('courseId') ?? DEFAULT_COURSE,
+  );
+  // 数据按课程维度缓存，loading 由"已加载课程 !== 当前课程"派生（避免 effect 同步 setState）
+  const [loaded, setLoaded] = useState<{
+    courseId: string;
+    graph: GraphData;
+    mastered: string[];
+  }>({ courseId: '', graph: { nodes: [], edges: [] }, mastered: [] });
+  const [detail, setDetail] = useState<{ courseId: string; point: KnowledgePoint } | null>(null);
 
-  useEffect(() => {
-    const param = searchParams.get('courseId');
-    if (param) setCourseId(param);
-  }, [searchParams]);
+  const loading = loaded.courseId !== courseId;
+  const graph = loading ? { nodes: [], edges: [] } : loaded.graph;
+  const mastered = loading ? [] : loaded.mastered;
 
   // 切换课程：拉取图谱 + 掌握状态
   useEffect(() => {
-    setLoading(true);
-    setDetail(null);
-    fetch(`/api/graph/${encodeURIComponent(courseId)}`)
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.success) setGraph(json.data as GraphData);
-      })
-      .finally(() => setLoading(false));
-    fetch(`/api/mastery?studentId=${STUDENT_ID}&courseId=${encodeURIComponent(courseId)}`)
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.success) setMastered((json.data as MasteryState).mastered);
+    let cancelled = false;
+    Promise.all([
+      fetch(`/api/graph/${encodeURIComponent(courseId)}`).then((r) => r.json()),
+      fetch(`/api/mastery?studentId=${STUDENT_ID}&courseId=${encodeURIComponent(courseId)}`).then((r) => r.json()),
+    ]).then(([graphRes, masteryRes]) => {
+      if (cancelled) return;
+      setLoaded({
+        courseId,
+        graph: graphRes.success ? (graphRes.data as GraphData) : { nodes: [], edges: [] },
+        mastered: masteryRes.success ? (masteryRes.data as MasteryState).mastered : [],
       });
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [courseId]);
 
   const handleNodeClick = useCallback(
@@ -59,7 +66,7 @@ function StudentGraphContent() {
       fetch(`/api/knowledge/${encodeURIComponent(nodeId)}?courseId=${encodeURIComponent(courseId)}`)
         .then((r) => r.json())
         .then((json) => {
-          if (json.success) setDetail(json.data as KnowledgePoint);
+          if (json.success) setDetail({ courseId, point: json.data as KnowledgePoint });
         });
     },
     [courseId],
@@ -79,12 +86,17 @@ function StudentGraphContent() {
         }),
       });
       const json = await res.json();
-      if (json.success) setMastered((json.data as MasteryState).mastered);
+      if (json.success) {
+        setLoaded((d) =>
+          d.courseId === courseId ? { ...d, mastered: (json.data as MasteryState).mastered } : d,
+        );
+      }
     },
     [courseId],
   );
 
-  const detailMastered = detail ? mastered.includes(detail.name) : false;
+  const activeDetail = detail && detail.courseId === courseId ? detail.point : null;
+  const detailMastered = activeDetail ? mastered.includes(activeDetail.name) : false;
 
   return (
     <div className="space-y-4">
@@ -111,13 +123,13 @@ function StudentGraphContent() {
         </div>
 
         <div className="space-y-4">
-          <KnowledgeDetail knowledge={detail} />
-          {detail && (
+          <KnowledgeDetail knowledge={activeDetail} />
+          {activeDetail && (
             <button
               className={detailMastered ? 'btn-ghost' : 'btn-primary'}
-              onClick={() => toggleMastered(detail.name, !detailMastered)}
+              onClick={() => toggleMastered(activeDetail.name, !detailMastered)}
             >
-              {detailMastered ? `✓ 已掌握「${detail.name}」（点击取消）` : `标记「${detail.name}」为已掌握`}
+              {detailMastered ? `✓ 已掌握「${activeDetail.name}」（点击取消）` : `标记「${activeDetail.name}」为已掌握`}
             </button>
           )}
         </div>

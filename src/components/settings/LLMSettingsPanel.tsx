@@ -5,7 +5,7 @@
  * 功能：选择协议格式 → 自定义 baseURL / Key / 模型 → 「hi」测连通 → 保存为运行时配置。
  * 安全：密钥只发服务端存储，界面仅回显掩码；「恢复默认」清除覆盖回退 .env。
  */
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useToast } from '@/components/ui/Toast';
 
 type ProviderKind =
@@ -61,21 +61,24 @@ export function LLMSettingsPanel() {
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [message, setMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
-  const load = useCallback(async () => {
-    const res = await fetch('/api/llm/config', { cache: 'no-store' });
-    if (!res.ok) return;
-    const json = (await res.json()) as { success: boolean; data?: ConfigView };
-    if (json.success && json.data) {
-      setView(json.data);
-      setKind(json.data.kind);
-      setBaseURL(json.data.baseURL);
-      setModel(json.data.model);
-    }
-  }, []);
-
   useEffect(() => {
-    void load();
-  }, [load]);
+    let cancelled = false;
+    fetch('/api/llm/config', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((json: { success: boolean; data?: ConfigView }) => {
+        if (cancelled || !json.success || !json.data) return;
+        setView(json.data);
+        setKind(json.data.kind);
+        setBaseURL(json.data.baseURL);
+        setModel(json.data.model);
+      })
+      .catch(() => {
+        /* 首次加载失败保持表单默认值 */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function candidate(withKey: boolean) {
     return {
