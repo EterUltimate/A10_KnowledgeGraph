@@ -16,7 +16,11 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "check": "node scripts/check-connectivity.mts",
-    "lint:fix": "eslint . --fix"
+    "start:oneclick": "powershell -NoProfile -ExecutionPolicy Bypass -File ./start.ps1",
+    "start:prod": "powershell -NoProfile -ExecutionPolicy Bypass -File ./start.ps1 -Mode prod",
+    "start:docker": "powershell -NoProfile -ExecutionPolicy Bypass -File ./start.ps1 -Mode docker",
+    "lint:fix": "eslint . --fix",
+    "seed:demo": "node scripts/seed-demo.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.65",

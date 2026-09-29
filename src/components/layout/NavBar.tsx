@@ -2,23 +2,34 @@
 
 /**
  * 全局导航栏：玻璃拟态吸顶 + 发丝线，品牌标 + 主导航（2px 滑动下划线）+ 主题/用户。
- * 分组导航：教师端（blue）/ 学生端（violet）眉标区分；窄屏折叠为弹簧展开菜单。
+ * 导航按登录角色向下兼容过滤：admin ⊇ teacher ⊇ student；未登录/学生仅见学生端。
  */
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { UserMenu } from '@/components/layout/UserMenu';
 import { LogoMark } from '@/components/layout/Footer';
+import type { Role } from '@/lib/auth-roles';
 
 const NAV_GROUPS: {
   label: string;
-  accent: 'blue' | 'violet';
+  accent: 'blue' | 'violet' | 'amber';
+  /** 哪些角色可见（向下兼容在角色映射里处理） */
+  visibleFor: Role[];
   items: { href: string; label: string }[];
 }[] = [
   {
+    label: '管理后台',
+    accent: 'amber',
+    visibleFor: ['admin'],
+    items: [{ href: '/admin', label: '系统管理' }],
+  },
+  {
     label: '教师端',
     accent: 'blue',
+    visibleFor: ['teacher', 'admin'],
     items: [
       { href: '/teacher/upload', label: '上传资料' },
       { href: '/teacher/knowledge', label: '知识点管理' },
@@ -27,6 +38,7 @@ const NAV_GROUPS: {
   {
     label: '学生端',
     accent: 'violet',
+    visibleFor: ['student', 'teacher', 'admin'],
     items: [
       { href: '/student/graph', label: '知识图谱' },
       { href: '/student/path', label: '学习路径' },
@@ -38,6 +50,9 @@ const NAV_GROUPS: {
 export function NavBar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { data: session } = useSession();
+  const role: Role = session?.user?.role ?? 'student';
+  const groups = NAV_GROUPS.filter((g) => g.visibleFor.includes(role));
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-background/72 backdrop-blur-xl">
@@ -66,13 +81,17 @@ export function NavBar() {
           </span>
         </Link>
 
-        {/* 桌面导航（分组） */}
+        {/* 桌面导航（按角色过滤分组） */}
         <div className="hidden flex-1 items-center gap-4 pl-4 md:flex">
-          {NAV_GROUPS.map((group) => (
+          {groups.map((group) => (
             <div key={group.label} className="flex items-center gap-0.5">
               <span
                 className={`mr-1.5 hidden select-none font-mono text-[10px] uppercase tracking-[0.12em] lg:inline ${
-                  group.accent === 'blue' ? 'text-acc-blue' : 'text-acc-violet'
+                  group.accent === 'blue'
+                    ? 'text-acc-blue'
+                    : group.accent === 'amber'
+                      ? 'text-acc-amber'
+                      : 'text-acc-violet'
                 }`}
               >
                 {group.label}
@@ -133,11 +152,15 @@ export function NavBar() {
         }`}
       >
         <div className="space-y-1 px-4 py-3">
-          {NAV_GROUPS.map((group) => (
+          {groups.map((group) => (
             <div key={group.label}>
               <p
                 className={`mb-1 mt-2 font-mono text-[10px] uppercase tracking-[0.12em] ${
-                  group.accent === 'blue' ? 'text-acc-blue' : 'text-acc-violet'
+                  group.accent === 'blue'
+                    ? 'text-acc-blue'
+                    : group.accent === 'amber'
+                      ? 'text-acc-amber'
+                      : 'text-acc-violet'
                 }`}
               >
                 {group.label}

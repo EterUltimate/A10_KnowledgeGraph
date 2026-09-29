@@ -5,7 +5,7 @@
  */
 import { auth } from '@/auth';
 import { fail } from '@/lib/http';
-import { decideTeacherAccess } from '@/lib/auth-roles';
+import { decideAdminAccess, decideTeacherAccess } from '@/lib/auth-roles';
 
 /** 返回 null 表示放行；否则返回应直接短路返回的 401/403 响应 */
 export async function requireTeacher() {
@@ -16,6 +16,19 @@ export async function requireTeacher() {
   }
   if (verdict === 'forbidden') {
     return fail('禁止访问：该操作需要教师角色', 403);
+  }
+  return null;
+}
+
+/** 管理员后台守卫：仅 admin 放行，否则 401/403 */
+export async function requireAdmin() {
+  const session = await auth();
+  const verdict = decideAdminAccess(session?.user);
+  if (verdict === 'unauthorized') {
+    return fail('未登录：管理后台需要先登录（admin 账号）', 401);
+  }
+  if (verdict === 'forbidden') {
+    return fail('禁止访问：该操作需要管理员角色', 403);
   }
   return null;
 }
