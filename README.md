@@ -47,7 +47,21 @@
 - 可选：Neo4j Desktop 5.x 或 Neo4j AuraDB 免费实例（不装也能跑，见"存储模式"）
 - 可选：DeepSeek / 阿里通义等 OpenAI 兼容 API Key
 
-### 部署步骤
+### 一键启动（Windows 推荐）
+
+项目根目录提供 `start.ps1` / `start.bat` 一键启动脚本，自动完成：Node 版本自检 → 依赖安装 → `.env` 生成（缺省时复制 `.env.example`）→ 启动服务 → `/api/health` 健康检查 → 打开浏览器；若服务已在运行则直接复用并打开页面。
+
+```powershell
+.\start.ps1                 # 开发模式（默认）
+.\start.ps1 -Mode prod      # 生产构建并启动
+.\start.ps1 -Mode docker    # Docker 一键起（app + Neo4j）
+.\start.ps1 -SkipDeps       # 跳过依赖安装
+.\start.ps1 -NoBrowser      # 不自动打开浏览器
+```
+
+> 资源管理器双击 `start.bat` 即可启动；也可用 `npm run start:oneclick` / `start:prod` / `start:docker`。
+
+### 手动部署步骤
 
 ```powershell
 # 1. 安装依赖
@@ -73,13 +87,15 @@ npm run start
 
 | 命令 | 说明 |
 | --- | --- |
+| `.\start.ps1` / `npm run start:oneclick` | 一键启动（环境自检+装依赖+.env+健康检查+开浏览器） |
 | `npm run dev` | 开发服务器 |
 | `npm run build` / `npm run start` | 生产构建 / 启动 |
 | `npm run typecheck` | TypeScript 类型检查 |
 | `npm run lint` | ESLint |
-| `npm test` | 单元测试（vitest，21 用例） |
+| `npm test` | 单元测试（Vitest，125 用例） |
 | `npm run test:e2e` | Playwright 端到端（首次需 `npx playwright install chromium`） |
 | `npm run check` | 一键连通性检查（Neo4j / LLM / 解析，需服务已启动；`BASE_URL=` 可指定目标） |
+| `npm run seed:demo` | 重种内置《数据结构》演示数据到默认课（写入当前存储并清理 e2e 污染） |
 
 ## 四、操作流程（演示脚本）
 
@@ -103,24 +119,34 @@ npm run start
 | `GRAPH_STORE` | `auto` | `auto`=有 Neo4j 配置则用之（连不上自动降级 JSON）/ `neo4j` / `json` |
 | `NEO4J_URI` / `NEO4J_USER` / `NEO4J_PASSWORD` | 本地默认 | Neo4j 连接信息 |
 | `RAG_TOP_K` / `RAG_CHUNK_SIZE` | 4 / 800 | 检索块数 / 切块字数 |
+| `LLM_EMBED_MODEL` | 空 | 向量检索嵌入模型；留空=纯关键词，填入则启用混合检索（缺省复用主 LLM 端点） |
+| `RAG_VECTOR_WEIGHT` | 0.5 | 混合检索向量分权重（0=纯关键词，1=纯向量），任一环节不可用自动回退关键词 |
 | `MAX_FILE_SIZE` | 20MB | 上传大小上限 |
-| `DATA_DIR` | `./data/store` | JSON 存储目录（课程/掌握状态/图谱兜底/RAG 语料） |
-| `AUTH_SECRET` / `DEMO_TEACHER_USER` 等 | 见 `.env.example` | 登录会话密钥与演示账号（教师/学生角色） |
+| `DATA_DIR` | `./data/store` | JSON 存储目录（课程/掌握状态/图谱兜底/RAG 语料/用户/密钥池） |
+| `AUTH_SECRET` | 演示默认 | 会话 JWT 签名密钥，生产必须改为强随机值 |
+| `DEMO_ADMIN_*` / `DEMO_TEACHER_*` / `DEMO_STUDENT_*` | 见 `.env.example` | 首次启动播种 `users.json` 的三个默认账号（可覆盖） |
 
 > ⚠️ API Key 只放 `.env`（已 gitignore），不要提交到仓库。
 
 ### 登录与角色（A-1）
 
-教师端写操作（上传课程、新增/编辑/删除知识点与关系）需要登录教师账号；学生端浏览图谱、
-学习路径、智能问答、掌握标记无需登录即可使用。
+三角色**向下兼容**（admin ⊇ teacher ⊇ student），导航与路由按登录角色自动区分：
+学生只见学生端，教师见教师端+学生端，管理员见管理后台+教师端+学生端。
 
-- 登录入口：`/login`；未登录访问教师页会自动跳转登录页（带 callbackUrl）
-- 演示账号：教师 `teacher / teach123456`，学生 `student / study123456`
-  （可用 `.env` 的 `DEMO_TEACHER_USER` / `DEMO_TEACHER_PASS` / `DEMO_STUDENT_USER` /
-  `DEMO_STUDENT_PASS` 覆盖；缺省值仅用于本地演示与 e2e，生产必须修改）
-- 会话为 JWT（Auth.js v5 Credentials Provider，无数据库依赖），签名密钥 `AUTH_SECRET`，
-  生产部署必须改为强随机值
-- 未登录/学生角色调用教师写 API 返回 401/403（proxy 中间件与路由内守卫双层校验）
+- 登录入口：`/login`；登录后按角色分流首页（admin→`/admin`、teacher→`/teacher/upload`、student→`/student/graph`）
+- 权限：学生端浏览/问答无需登录；教师端写操作（上传、知识点/关系增删改）需 teacher；管理后台需 admin
+- 默认账号（首次启动播种 `data/store/users.json`，scrypt 哈希存储，之后在管理后台增删改）：
+  教师 `teacher / teach123456`、学生 `student / study123456`、管理员 `admin / admin123456`
+  （可用 `.env` 的 `DEMO_ADMIN_*` / `DEMO_TEACHER_*` / `DEMO_STUDENT_*` 覆盖；缺省仅用于本地演示与 e2e，生产必须修改）
+- 会话为 JWT（Auth.js v5 Credentials Provider），签名密钥 `AUTH_SECRET`，生产必须改为强随机值
+- 未登录/角色不足调用受保护 API 返回 401/403（proxy 中间件 + 路由内 `requireTeacher`/`requireAdmin` 双层校验）
+
+### 管理员后台（/admin）
+
+登录 `admin` 账号后进入，三大能力：
+- **用户管理**：新增/删除账号、重置口令（禁止删除最后一个管理员）；
+- **大模型 API Key 密钥池**：维护多套 provider/Key/模型（含嵌入模型），一键切换“当前生效”（掩码回显，绝不下发明文）；生效密钥带 embedModel 即自动启用 RAG 向量检索；
+- **图数据维护**：课程列表、级联删除课程（图+语料+向量+注册表）、一键重种内置《数据结构》演示数据。
 
 ## 六、常见问题（FAQ）
 

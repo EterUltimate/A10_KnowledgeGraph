@@ -6,7 +6,7 @@
  */
 import { Suspense, useState, type FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { getSession, signIn } from 'next-auth/react';
 import { LogoMark } from '@/components/layout/Footer';
 
 function LoginForm() {
@@ -18,7 +18,7 @@ function LoginForm() {
   const [submitting, setSubmitting] = useState(false);
 
   const forbidden = searchParams.get('error') === 'forbidden';
-  const callbackUrl = searchParams.get('callbackUrl') ?? '/teacher/upload';
+  const callbackUrl = searchParams.get('callbackUrl');
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -30,7 +30,15 @@ function LoginForm() {
         setError('用户名或密码错误');
         return;
       }
-      router.push(callbackUrl);
+      // 无显式 callbackUrl 时，按登录后角色分流（向下兼容：各角色落到自己的首页）
+      let target = callbackUrl ?? '';
+      if (!target) {
+        const session = await getSession();
+        const role = session?.user?.role ?? 'student';
+        target =
+          role === 'admin' ? '/admin' : role === 'teacher' ? '/teacher/upload' : '/student/graph';
+      }
+      router.push(target);
       router.refresh();
     } finally {
       setSubmitting(false);
@@ -56,7 +64,7 @@ function LoginForm() {
       {forbidden && (
         <div className="mb-4 flex items-center gap-2 rounded-lg border border-line bg-acc-amber-soft px-3 py-2 text-sm text-fg">
           <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-acc-amber" />
-          当前账号无教师权限，请使用教师账号登录。
+          当前账号无权访问该页面，请使用具备权限的账号登录。
         </div>
       )}
 
@@ -108,9 +116,10 @@ function LoginForm() {
 
         <div className="rounded-lg border border-line bg-surface-muted px-3 py-2.5 text-xs leading-relaxed text-fg-muted">
           演示账号：教师 <code className="kbd !text-[11px]">teacher / teach123456</code>
-          <br />
+          <span className="ml-1">· 学生</span>{' '}
+          <code className="kbd !text-[11px]">student / study123456</code>
           <span className="mt-1 block">
-            学生 <code className="kbd !text-[11px]">student / study123456</code>
+            管理员 <code className="kbd !text-[11px]">admin / admin123456</code>
           </span>
         </div>
       </form>

@@ -114,3 +114,16 @@ export async function countKnowledge(courseId: string): Promise<number> {
   const store = await getGraphStore();
   return store.countKnowledge(courseId);
 }
+
+/**
+ * 管理员：删除整门课程的图谱（逐点删除，联动清理其关系）。
+ * 两存储实现均支持（JSON 按 id 过滤、Neo4j DETACH DELETE），无需扩展 GraphStore 接口。
+ */
+export async function deleteCourseGraph(courseId: string): Promise<number> {
+  const store = await getGraphStore();
+  const points = await store.listKnowledge(courseId);
+  for (const p of points) {
+    await store.deleteKnowledge(p.id);
+  }
+  return points.length;
+}
