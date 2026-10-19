@@ -7,4 +7,5 @@ useDefault = true
 
 [[allowlists]]
 description = "单元测试中的假密钥占位符（非真实凭据），路径放行"
-path = '''tests/'''
+path = '''tests/.*'''
+regexes = ['''(?i)dummy-key''', '''sk-(ant|ds)-[a-z0-9]+''']

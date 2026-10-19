@@ -37,7 +37,7 @@ const validKey = {
   name: 'DeepSeek 主号',
   kind: 'openai-compatible' as const,
   baseURL: 'https://api.deepseek.com/v1',
-  apiKey: 'test-key-placeholder',
+  apiKey: 'dummy-key',
   model: 'deepseek-chat',
 };
 
@@ -57,7 +57,7 @@ describe('密钥池生效与优先级', () => {
     const eff = getEffectiveLLMConfig();
     expect(eff.source).toBe('profile');
     expect(eff.model).toBe('deepseek-chat');
-    expect(eff.apiKey).toBe('test-key-placeholder');
+    expect(eff.apiKey).toBe('dummy-key');
   });
 
   it('profile 生效优先于 runtime 单覆盖', () => {
