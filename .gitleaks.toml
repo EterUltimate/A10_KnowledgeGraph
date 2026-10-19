@@ -5,7 +5,16 @@ title = "A10 gitleaks config"
 [extend]
 useDefault = true
 
-[[allowlists]]
-description = "单元测试中的假密钥占位符（非真实凭据），路径放行"
-path = '''tests/.*'''
-regexes = ['''(?i)dummy-key''', '''sk-(ant|ds)-[a-z0-9]+''']
+# 单元测试里的假密钥占位符（非真实凭据）按路径整体放行。
+# gitleaks 8.24 全局 allowlist 采用 paths / regexes 字段。
+[allowlist]
+description = "单元测试中的假密钥占位符，非真实凭据"
+paths = [
+  '''(^|/)tests/'''
+]
+regexes = [
+  '''sk-(ant|ds)-[a-z0-9]+''',
+  '''test-key-placeholder''',
+  '''dummy-key'''
+]
+regexTarget = "line"
