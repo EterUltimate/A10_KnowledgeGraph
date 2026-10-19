@@ -1,0 +1,10 @@
+title = "A10 gitleaks config"
+
+# 继承 gitleaks 默认规则集，仅对单元测试目录放行，
+# 保证 src/ 等真实源码仍被完整扫描。
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "单元测试中的假密钥占位符（非真实凭据），路径放行"
+path = '''tests/'''
