@@ -8,9 +8,16 @@ import path from 'path';
 import { generateText } from 'ai';
 import type { QAResponse, TextChunk } from '@/types';
 import { config } from '@/lib/config';
-import { getLLM, isLLMConfigured } from '@/lib/ai/provider';
+import {
+  getLLM,
+  isLLMConfigured,
+  isEmbeddingConfigured,
+  embedQuery,
+} from '@/lib/ai/provider';
 import { buildQASystemPrompt } from '@/lib/ai/prompts';
 import { readJsonFile, writeJsonFile } from '@/lib/db/json-file';
+import { ensureEmbeddings, evictEmbeddings } from '@/lib/rag/embedding-index';
+import { cosineSimilarity, hybridScores } from '@/lib/rag/vector';
 
 /** chunks.json 持久化结构：courseId -> 文本块列表（重新上传同一课程会整体覆盖） */
 type ChunkFileData = Record<string, TextChunk[]>;
@@ -49,6 +56,20 @@ export function getChunks(courseId?: string): TextChunk[] {
   const store = loadChunkStore();
   if (!courseId) return Object.values(store).flat();
   return [...(store[courseId] ?? [])];
+}
+
+/**
+ * 管理员：删除某课程的 RAG 语料（同步清理其向量缓存）。
+ * 返回被删的 chunk id 列表（供级联清理）。
+ */
+export function deleteChunks(courseId: string): string[] {
+  const store = loadChunkStore();
+  const removed = store[courseId] ?? [];
+  const ids = removed.map((c) => c.id);
+  delete store[courseId];
+  writeJsonFile(chunksFile(), store);
+  evictEmbeddings(ids);
+  return ids;
 }
 
 /**
@@ -106,18 +127,43 @@ function scoreChunk(chunk: TextChunk, queryTokens: string[], queryUnigrams: stri
 }
 
 /**
- * 检索最相关的 topK 个文本块（A10.md 十五节 步骤 26）。
- * 打分排序后取前 N；全部零分时返回前 topK 块作为兜底上下文。
+ * 检索最相关的 topK 个文本块（A10.md 十五节 步骤 26）——混合检索：
+ *  1. 关键词打分（bigram + 单字 + 章节线索）始终计算，作为基线与兜底；
+ *  2. 配置了嵌入模型时，叠加向量余弦相似度（hybrid），语义召回更好；
+ *  3. 未配置嵌入 / provider 不支持 / 嵌入调用异常 / 权重为 0 —— 任一种情况都完整回退纯关键词。
+ * 全部零分时仍返回前 topK 块作为兜底上下文。
  */
 export async function retrieve(question: string, courseId?: string): Promise<TextChunk[]> {
   const chunks = getChunks(courseId);
   if (chunks.length === 0) return [];
   const tokens = tokenize(question);
   const unigrams = tokenizeUnigrams(question);
-  const scored = chunks
-    .map((chunk) => ({ chunk, score: scoreChunk(chunk, tokens, unigrams) }))
+  const kwRaw = chunks.map((chunk) => scoreChunk(chunk, tokens, unigrams));
+
+  // 向量分：默认全部 null（即纯关键词）；仅启用嵌入时尝试计算，失败安全回退
+  const vecCos: Array<number | null> = chunks.map(() => null);
+  if (config.rag.vectorWeight > 0 && isEmbeddingConfigured()) {
+    try {
+      const index = await ensureEmbeddings(chunks);
+      const queryVec = await embedQuery(question);
+      chunks.forEach((chunk, i) => {
+        const v = index.get(chunk.id);
+        vecCos[i] = v ? cosineSimilarity(queryVec, v) : null;
+      });
+    } catch (err) {
+      // 嵌入不可用（网络/配额/端点错误等）→ 保持 vecCos 全 null，退化为关键词检索
+      console.warn(
+        '[rag.retrieve] 向量检索不可用，已回退关键词检索：',
+        err instanceof Error ? err.message : err,
+      );
+    }
+  }
+
+  const finals = hybridScores(kwRaw, vecCos, config.rag.vectorWeight);
+  const ranked = chunks
+    .map((chunk, i) => ({ chunk, score: finals[i] }))
     .sort((a, b) => b.score - a.score);
-  const top = scored.slice(0, config.rag.topK);
+  const top = ranked.slice(0, config.rag.topK);
   // 兜底：若问题与所有块都不匹配，仍给前 topK 块（LLM 可据此回答"教材中未涉及"）
   const meaningful = top.filter((t) => t.score > 0);
   return (meaningful.length > 0 ? meaningful : top).map((t) => t.chunk);

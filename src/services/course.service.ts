@@ -60,6 +60,16 @@ export async function createCourse(course: Omit<Course, 'createdAt'>): Promise<C
   return created;
 }
 
+/** 管理员：从课程注册表删除课程（仅除名；图数据/语料由 deleteCourse 统一级联清理） */
+export function deleteCourseRegistry(courseId: string): boolean {
+  const courses = loadCourses();
+  const idx = courses.findIndex((c) => c.id === courseId);
+  if (idx < 0) return false;
+  courses.splice(idx, 1);
+  saveCourses();
+  return true;
+}
+
 /** 获取学生某课程的掌握状态（A10.md 十四节 步骤 18） */
 export async function getMastery(studentId: string, courseId: string): Promise<MasteryState> {
   return (await getMasteryStore()).get(studentId, courseId);

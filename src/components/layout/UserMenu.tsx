@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
+import { ROLE_LABELS, type Role } from '@/lib/auth-roles';
 
 export function UserMenu() {
   const { data: session, status } = useSession();
@@ -37,9 +38,15 @@ export function UserMenu() {
     );
   }
 
-  const role = session.user.role ?? 'student';
-  const name = session.user.name ?? (role === 'teacher' ? '教师' : '学生');
+  const role: Role = session.user.role ?? 'student';
+  const name = session.user.name ?? ROLE_LABELS[role];
   const initial = name.trim().slice(0, 1) || 'U';
+  const badgeClass =
+    role === 'admin'
+      ? 'bg-acc-amber-soft text-acc-amber'
+      : role === 'teacher'
+        ? 'bg-acc-blue-soft text-acc-blue'
+        : 'bg-acc-violet-soft text-acc-violet';
 
   return (
     <div className="relative" ref={ref}>
@@ -55,13 +62,9 @@ export function UserMenu() {
         </span>
         <span className="hidden max-w-[8rem] truncate sm:inline">{name}</span>
         <span
-          className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none ${
-            role === 'teacher'
-              ? 'bg-acc-blue-soft text-acc-blue'
-              : 'bg-acc-violet-soft text-acc-violet'
-          }`}
+          className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none ${badgeClass}`}
         >
-          {role === 'teacher' ? '教师' : '学生'}
+          {ROLE_LABELS[role]}
         </span>
       </button>
 
@@ -72,9 +75,19 @@ export function UserMenu() {
           style={{ animation: 'fade-up 240ms var(--ease-spring-soft)' }}
         >
           <div className="border-b border-line px-3 py-2 text-xs text-fg-subtle">
-            {name} · {role === 'teacher' ? '教师' : '学生'}
+            {name} · {ROLE_LABELS[role]}
           </div>
-          {role === 'teacher' && (
+          {role === 'admin' && (
+            <Link
+              href="/admin"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="block px-3 py-2 text-sm text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
+            >
+              管理后台
+            </Link>
+          )}
+          {(role === 'teacher' || role === 'admin') && (
             <Link
               href="/teacher/settings"
               role="menuitem"

@@ -1,11 +1,12 @@
 /**
  * Auth.js v5 配置（A-1）：Credentials Provider + JWT 会话，无数据库依赖。
- * 角色模型：teacher（教师端写操作）/ student（学生端默认角色）。
- * 演示账号见 src/lib/auth-env.ts；生产环境必须覆盖（见 README「登录与角色」）。
+ * 角色模型：student（学生端）/ teacher（教师端）/ admin（管理后台），向下兼容。
+ * 账号存于 data/store/users.json（scrypt 哈希），首次自动播种演示账号，见 user.service。
  */
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import { DEMO_ACCOUNTS, readAuthSecret } from '@/lib/auth-env';
+import { readAuthSecret } from '@/lib/auth-env';
+import { verifyUser } from '@/services/user.service';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: readAuthSecret(),
@@ -13,7 +14,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: { signIn: '/login' },
   providers: [
     Credentials({
-      name: '演示账号登录',
+      name: '账号登录',
       credentials: {
         username: { label: '用户名', type: 'text' },
         password: { label: '密码', type: 'password' },
@@ -21,19 +22,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       authorize(credentials) {
         const username = String(credentials?.username ?? '').trim();
         const password = String(credentials?.password ?? '');
-        if (
-          username === DEMO_ACCOUNTS.teacher.username &&
-          password === DEMO_ACCOUNTS.teacher.password
-        ) {
-          return { id: 'teacher', name: '教师（演示）', role: 'teacher' as const };
-        }
-        if (
-          username === DEMO_ACCOUNTS.student.username &&
-          password === DEMO_ACCOUNTS.student.password
-        ) {
-          return { id: 'student', name: '学生（演示）', role: 'student' as const };
-        }
-        return null;
+        const user = verifyUser(username, password);
+        if (!user) return null;
+        return { id: user.id, name: user.name, email: user.username, role: user.role };
       },
     }),
   ],
@@ -44,7 +35,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     session({ session, token }) {
       if (session.user) {
-        session.user.role = (token.role as 'teacher' | 'student' | undefined) ?? 'student';
+        session.user.role =
+          (token.role as 'teacher' | 'student' | 'admin' | undefined) ?? 'student';
       }
       return session;
     },

@@ -15,6 +15,12 @@ function readIntEnv(key: string, fallback: number): number {
   return Number.isNaN(parsed) ? fallback : parsed;
 }
 
+function readFloatEnv(key: string, fallback: number): number {
+  const raw = process.env[key];
+  const parsed = raw ? Number.parseFloat(raw) : NaN;
+  return Number.isNaN(parsed) ? fallback : parsed;
+}
+
 /** 图存储模式：auto=有 Neo4j 密码则用 Neo4j（连不上自动降级 JSON），neo4j/json 强制指定 */
 export type StoreMode = 'auto' | 'neo4j' | 'json';
 
@@ -34,11 +40,24 @@ export const config = {
     baseURL: readEnv('LLM_BASE_URL', 'https://api.deepseek.com/v1'),
     model: readEnv('LLM_MODEL', 'deepseek-chat'),
   },
+  /**
+   * 向量检索用的嵌入模型（RAG 混合检索）。缺省复用主 LLM 的 baseURL/Key 与 provider 协议，
+   * 仅模型名单独配 LLM_EMBED_MODEL；如需独立嵌入端点可另填 baseURL/apiKey/kind。
+   * model 留空即视为不启用向量检索（纯关键词，零配置可跑）。
+   */
+  embed: {
+    model: readEnv('LLM_EMBED_MODEL', ''),
+    baseURL: readEnv('LLM_EMBED_BASE_URL', ''),
+    apiKey: readEnv('LLM_EMBED_API_KEY', ''),
+    kind: readEnv('LLM_EMBED_KIND', ''),
+  },
   rag: {
     /** 检索返回的最相关文本块数量（A10.md 十五节建议 3-5） */
     topK: readIntEnv('RAG_TOP_K', 4),
     /** 文本切块大小（字） */
     chunkSize: readIntEnv('RAG_CHUNK_SIZE', 800),
+    /** 混合检索里向量分的权重（0=纯关键词，1=纯向量，越界自动钳制） */
+    vectorWeight: Math.min(1, Math.max(0, readFloatEnv('RAG_VECTOR_WEIGHT', 0.5))),
   },
   store: {
     mode: readStoreMode(),

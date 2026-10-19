@@ -18,11 +18,13 @@ export function ThemeToggle() {
   );
 
   const isDark = resolvedTheme === 'dark';
+  // 文案也纳入 mounted 守卫：水合首帧两端都渲染中性值，避免 resolvedTheme 未同步导致的 hydration 不一致
+  const label = mounted ? (isDark ? '切换为浅色主题' : '切换为深色主题') : '切换主题';
   return (
     <button
       type="button"
-      aria-label={isDark ? '切换为浅色主题' : '切换为深色主题'}
-      title={isDark ? '切换为浅色主题' : '切换为深色主题'}
+      aria-label={label}
+      title={label}
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
       className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-surface text-fg-muted transition-all duration-300 [transition-timing-function:var(--ease-spring)] hover:-translate-y-0.5 hover:border-line-strong hover:text-fg"
     >

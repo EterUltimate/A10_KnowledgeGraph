@@ -8,8 +8,14 @@ import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { generateText, type LanguageModel } from 'ai';
-import { getEffectiveLLMConfig, isLLMConfigured, type LLMConfig } from '@/lib/ai/llm-config';
+import { generateText, embed, embedMany, type EmbeddingModel, type LanguageModel } from 'ai';
+import {
+  getEffectiveLLMConfig,
+  getEffectiveEmbedConfig,
+  isEmbeddingConfigured,
+  isLLMConfigured,
+  type LLMConfig,
+} from '@/lib/ai/llm-config';
 
 /**
  * LLM Base URL SSRF 防护（A-5）：
@@ -76,7 +82,63 @@ export function getLLM(): LanguageModel {
   return cachedModel;
 }
 
-export { isLLMConfigured, getEffectiveLLMConfig };
+/* ============================ 向量检索（嵌入模型） ============================ */
+
+let cachedEmbedKey: string | null = null;
+let cachedEmbedModel: EmbeddingModel | null = null;
+
+/** 按生效嵌入配置构建嵌入模型（复用主 LLM 的 baseURL/Key/协议，同一 provider 工厂） */
+function buildEmbedModel(): EmbeddingModel {
+  const cfg = getEffectiveEmbedConfig();
+  if (!cfg) throw new Error('[provider] 嵌入模型未配置（RAG 向量检索不可用）');
+  const unsafe = assertLLMBaseURLSafe(cfg.baseURL);
+  if (unsafe) throw new Error(`[provider] ${unsafe}`);
+  // 自定义模型名可能不在 provider 的内置 id 联合类型内，统一 as never 兼容任意字符串
+  switch (cfg.kind) {
+    case 'openai-chat':
+    case 'openai-responses':
+      return createOpenAI({ baseURL: cfg.baseURL, apiKey: cfg.apiKey }).embeddingModel(
+        cfg.model as never,
+      );
+    case 'gemini':
+      return createGoogleGenerativeAI({ baseURL: cfg.baseURL, apiKey: cfg.apiKey }).embeddingModel(
+        cfg.model as never,
+      );
+    case 'openai-compatible':
+    default:
+      return createOpenAICompatible({
+        name: 'a10-embed',
+        baseURL: cfg.baseURL,
+        apiKey: cfg.apiKey,
+      }).embeddingModel(cfg.model as never);
+  }
+}
+
+function getEmbedModel(): EmbeddingModel {
+  const cfg = getEffectiveEmbedConfig();
+  if (!cfg) throw new Error('[provider] 嵌入模型未配置');
+  const signature = `${cfg.kind}|${cfg.baseURL}|${cfg.apiKey}|${cfg.model}`;
+  if (!cachedEmbedModel || cachedEmbedKey !== signature) {
+    cachedEmbedModel = buildEmbedModel();
+    cachedEmbedKey = signature;
+  }
+  return cachedEmbedModel;
+}
+
+/** 批量嵌入文本（供索引构建用）；未配置或调用失败由上层捕获后回退关键词检索 */
+export async function embedTexts(texts: string[]): Promise<number[][]> {
+  if (texts.length === 0) return [];
+  const { embeddings } = await embedMany({ model: getEmbedModel(), values: texts });
+  return embeddings;
+}
+
+/** 嵌入单条查询（检索时用） */
+export async function embedQuery(text: string): Promise<number[]> {
+  const { embedding } = await embed({ model: getEmbedModel(), value: text });
+  return embedding;
+}
+
+export { isLLMConfigured, isEmbeddingConfigured, getEffectiveLLMConfig };
 
 export interface PingResult {
   ok: boolean;
